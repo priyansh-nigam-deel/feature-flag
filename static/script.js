@@ -33,7 +33,8 @@ function initializeFlags() {
                 expiryDate: '2025-12-15',
                 defaultVariation: 'false',
                 createdAt: '2025-10-01T10:00:00Z',
-                rolloutPercentage: 75
+                rolloutPercentage: 75,
+                targetingContext: 'organization_id, user_id, enterprise_customers'
             },
             {
                 name: 'payment_v2_enabled',
@@ -47,7 +48,8 @@ function initializeFlags() {
                 expiryDate: '2025-11-20',
                 defaultVariation: 'false',
                 createdAt: '2025-10-05T14:30:00Z',
-                rolloutPercentage: 50
+                rolloutPercentage: 50,
+                targetingContext: 'organization_id, payment_method, region'
             },
             {
                 name: 'theme_variant',
@@ -61,7 +63,8 @@ function initializeFlags() {
                 expiryDate: '2025-12-01',
                 defaultVariation: 'light',
                 createdAt: '2025-10-10T09:15:00Z',
-                rolloutPercentage: 0
+                rolloutPercentage: 0,
+                targetingContext: 'user_id, theme_preference, device_type'
             },
             {
                 name: 'max_upload_size',
@@ -75,7 +78,8 @@ function initializeFlags() {
                 expiryDate: '2026-01-10',
                 defaultVariation: '100',
                 createdAt: '2025-09-20T16:45:00Z',
-                rolloutPercentage: 100
+                rolloutPercentage: 100,
+                targetingContext: 'organization_id, plan_tier, storage_quota'
             },
             {
                 name: 'feature_config',
@@ -89,7 +93,8 @@ function initializeFlags() {
                 expiryDate: '2025-11-25',
                 defaultVariation: '{"enabled": false}',
                 createdAt: '2025-10-15T11:20:00Z',
-                rolloutPercentage: 0
+                rolloutPercentage: 0,
+                targetingContext: 'organization_id, feature_flags, beta_access'
             },
             {
                 name: 'enable_notifications',

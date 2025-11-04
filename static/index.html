@@ -47,28 +47,119 @@
                 </div>
             </div>
 
-            <div class="filters">
-                <input type="text" placeholder="Search flags..." class="search-input">
-                <select class="filter-select">
-                    <option>All Environments</option>
-                    <option>dev</option>
-                    <option>stage</option>
-                    <option>demo</option>
-                    <option>prod</option>
-                    <option>giger-xyz</option>
-                </select>
-                <select class="filter-select">
-                    <option>All Types</option>
-                    <option>Boolean</option>
-                    <option>String</option>
-                    <option>Number</option>
-                    <option>Object</option>
-                </select>
-                <select class="filter-select">
-                    <option>All Status</option>
-                    <option>Active</option>
-                    <option>Inactive</option>
-                </select>
+            <div class="filters-container">
+                <div class="search-section">
+                    <input type="text" id="searchInput" placeholder="🔍 Search flags by name, description, or targeting context..." class="search-input" oninput="applyFilters()">
+                    <button class="btn-toggle-filters" onclick="toggleAdvancedFilters()">
+                        <span id="filterToggleIcon">⚙️</span> Advanced Filters
+                    </button>
+                </div>
+
+                <div class="advanced-filters" id="advancedFilters" style="display: none;">
+                    <div class="filters-row">
+                        <div class="filter-group autocomplete-container">
+                            <label>Team</label>
+                            <input type="text" 
+                                   class="filter-input autocomplete-input" 
+                                   id="filterTeam" 
+                                   placeholder="Search teams..." 
+                                   oninput="showAutocomplete(this, 'teams')"
+                                   onblur="hideAutocomplete(this)"
+                                   autocomplete="off">
+                            <div class="autocomplete-dropdown" id="filterTeam-dropdown"></div>
+                        </div>
+
+                        <div class="filter-group autocomplete-container">
+                            <label>Owner</label>
+                            <input type="text" 
+                                   class="filter-input autocomplete-input" 
+                                   id="filterOwner" 
+                                   placeholder="Search owners..." 
+                                   oninput="showAutocomplete(this, 'owners')"
+                                   onblur="hideAutocomplete(this)"
+                                   autocomplete="off">
+                            <div class="autocomplete-dropdown" id="filterOwner-dropdown"></div>
+                        </div>
+
+                        <div class="filter-group autocomplete-container">
+                            <label>Environment</label>
+                            <input type="text" 
+                                   class="filter-input autocomplete-input" 
+                                   id="filterEnvironment" 
+                                   placeholder="Search environments..." 
+                                   oninput="showAutocomplete(this, 'environments')"
+                                   onblur="hideAutocomplete(this)"
+                                   autocomplete="off">
+                            <div class="autocomplete-dropdown" id="filterEnvironment-dropdown"></div>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Type</label>
+                            <select class="filter-select" id="filterType" onchange="applyFilters()">
+                                <option value="">All Types</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="object">Object</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Sort By</label>
+                            <select class="filter-select" id="sortBy" onchange="applyFilters()">
+                                <option value="created-desc">Newest First</option>
+                                <option value="created-asc">Oldest First</option>
+                                <option value="expiry-asc">Expiring Soon</option>
+                                <option value="expiry-desc">Expiring Later</option>
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <button class="btn btn-secondary" onclick="clearFilters()">Clear All Filters</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="basic-filters">
+                    <select class="filter-select" id="quickFilterEnvironment" onchange="applyFilters()">
+                        <option value="">All Environments</option>
+                        <option value="dev">dev</option>
+                        <option value="stage">stage</option>
+                        <option value="demo">demo</option>
+                        <option value="prod">prod</option>
+                    </select>
+                    <select class="filter-select" id="quickFilterType" onchange="applyFilters()">
+                        <option value="">All Types</option>
+                        <option value="boolean">Boolean</option>
+                        <option value="string">String</option>
+                        <option value="number">Number</option>
+                        <option value="object">Object</option>
+                    </select>
+                    <select class="filter-select" id="quickFilterStatus" onchange="applyFilters()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <select class="filter-select" id="quickSort" onchange="applyFilters()">
+                        <option value="created-desc">Newest First</option>
+                        <option value="created-asc">Oldest First</option>
+                        <option value="expiry-asc">Expiring Soon</option>
+                        <option value="expiry-desc">Expiring Later</option>
+                    </select>
+                </div>
+
+                <div class="filter-results" id="filterResults"></div>
             </div>
 
             <div class="flags-table">
@@ -80,11 +171,17 @@
                             <th>Status</th>
                             <th>Environment</th>
                             <th>Owner</th>
-                            <th>Expiry Date</th>
+                            <th>Team</th>
+                            <th onclick="sortTable('createdAt')" style="cursor: pointer;" title="Click to sort">
+                                Created Date <span class="sort-icon">↕️</span>
+                            </th>
+                            <th onclick="sortTable('expiryDate')" style="cursor: pointer;" title="Click to sort">
+                                Expiry Date <span class="sort-icon">↕️</span>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="flagsTableBody">
                         <tr>
                             <td>
                                 <a href="flag-detail.html" class="flag-name-link">
