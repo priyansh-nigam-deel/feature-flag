@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Flag Control Centre</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚩 Feature Flag Control Centre</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>John Doe (PM)</strong></span>
+            </div>
+        </header>
+
+        <nav class="nav-bar">
+            <a href="index.html" class="active">Dashboard</a>
+            <a href="create-flag.html">Create New Flag</a>
+            <a href="environments.html">Environments</a>
+            <a href="debug.html">Debug/Simulate</a>
+        </nav>
+
+        <main>
+            <div class="page-header">
+                <h2>Feature Flags Dashboard</h2>
+                <a href="create-flag.html" class="btn btn-primary">+ Create New Flag</a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">24</div>
+                    <div class="stat-label">Total Flags</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Active Flags</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Inactive Flags</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Expiring Soon</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <input type="text" placeholder="Search flags..." class="search-input">
+                <select class="filter-select">
+                    <option>All Environments</option>
+                    <option>dev</option>
+                    <option>stage</option>
+                    <option>demo</option>
+                    <option>prod</option>
+                    <option>giger-xyz</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Types</option>
+                    <option>Boolean</option>
+                    <option>String</option>
+                    <option>Number</option>
+                    <option>Object</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Status</option>
+                    <option>Active</option>
+                    <option>Inactive</option>
+                </select>
+            </div>
+
+            <div class="flags-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flag Name</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Environment</th>
+                            <th>Owner</th>
+                            <th>Expiry Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">enable_new_dashboard</div>
+                                    <div class="flag-desc">Enable new analytics dashboard for users</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge boolean">Boolean</span></td>
+                            <td><span class="status-badge active">Active</span></td>
+                            <td>prod</td>
+                            <td>Sarah Johnson</td>
+                            <td>2025-12-15</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('enable_new_dashboard')">🔗</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">payment_v2_enabled</div>
+                                    <div class="flag-desc">Enable v2 payment processing system</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge boolean">Boolean</span></td>
+                            <td><span class="status-badge active">Active</span></td>
+                            <td>stage</td>
+                            <td>Mike Chen</td>
+                            <td>2025-11-20</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('payment_v2_enabled')">🔗</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">theme_variant</div>
+                                    <div class="flag-desc">UI theme selection for A/B testing</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge string">String</span></td>
+                            <td><span class="status-badge inactive">Inactive</span></td>
+                            <td>dev</td>
+                            <td>Emma Davis</td>
+                            <td>2025-12-01</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('theme_variant')">🔗</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">max_upload_size</div>
+                                    <div class="flag-desc">Maximum file upload size in MB</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge number">Number</span></td>
+                            <td><span class="status-badge active">Active</span></td>
+                            <td>prod</td>
+                            <td>David Wilson</td>
+                            <td>2026-01-10</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('max_upload_size')">🔗</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">feature_config</div>
+                                    <div class="flag-desc">Complex feature configuration object</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge object">Object</span></td>
+                            <td><span class="status-badge inactive">Inactive</span></td>
+                            <td>demo</td>
+                            <td>Lisa Brown</td>
+                            <td>2025-11-25</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('feature_config')">🔗</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="flag-detail.html" class="flag-name-link">
+                                    <div class="flag-name">enable_notifications</div>
+                                    <div class="flag-desc">Enable push notifications feature</div>
+                                </a>
+                            </td>
+                            <td><span class="type-badge boolean">Boolean</span></td>
+                            <td><span class="status-badge active">Active</span></td>
+                            <td>prod</td>
+                            <td>Tom Anderson</td>
+                            <td>2025-11-18</td>
+                            <td>
+                                <a href="flag-detail.html"><button class="btn-icon" title="View Details">👁️</button></a>
+                                <button class="btn-icon" title="Copy Link" onclick="copyFlagLink('enable_notifications')">🔗</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 Feature Flag Control Centre | Last Updated: Nov 3, 2025</p>
+        </footer>
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+</html>
+
+

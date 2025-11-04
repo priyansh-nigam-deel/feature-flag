@@ -1,0 +1,24 @@
+# Deployment files (for Kubernetes)
+deployment/
+
+# Deployment script
+deploy.sh
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+

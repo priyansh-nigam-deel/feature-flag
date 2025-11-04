@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environments</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚩 Feature Flag Control Centre</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>John Doe (PM)</strong></span>
+            </div>
+        </header>
+
+        <nav class="nav-bar">
+            <a href="index.html">Dashboard</a>
+            <a href="create-flag.html">Create New Flag</a>
+            <a href="environments.html" class="active">Environments</a>
+            <a href="debug.html">Debug/Simulate</a>
+        </nav>
+
+        <main>
+            <div class="page-header">
+                <h2>Environments</h2>
+                <button class="btn btn-primary" onclick="showCreateGigerModal()">⚡ Create Giger Environment</button>
+            </div>
+
+            <div class="env-sections">
+                <section class="env-section">
+                    <h3>Standard Environments</h3>
+                    <div class="env-grid">
+                        <div class="env-card standard">
+                            <div class="env-icon">🔵</div>
+                            <div class="env-info">
+                                <h4>dev</h4>
+                                <p>Development environment</p>
+                                <div class="env-stats">
+                                    <span>24 flags</span>
+                                    <span>12 active</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm" onclick="viewEnvironment('dev')">View Details</button>
+                        </div>
+
+                        <div class="env-card standard">
+                            <div class="env-icon">🟡</div>
+                            <div class="env-info">
+                                <h4>stage</h4>
+                                <p>Staging environment</p>
+                                <div class="env-stats">
+                                    <span>24 flags</span>
+                                    <span>15 active</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm" onclick="viewEnvironment('stage')">View Details</button>
+                        </div>
+
+                        <div class="env-card standard">
+                            <div class="env-icon">🟣</div>
+                            <div class="env-info">
+                                <h4>demo</h4>
+                                <p>Demo environment</p>
+                                <div class="env-stats">
+                                    <span>18 flags</span>
+                                    <span>10 active</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm" onclick="viewEnvironment('demo')">View Details</button>
+                        </div>
+
+                        <div class="env-card standard">
+                            <div class="env-icon">🟢</div>
+                            <div class="env-info">
+                                <h4>prod</h4>
+                                <p>Production environment</p>
+                                <div class="env-stats">
+                                    <span>24 flags</span>
+                                    <span>18 active</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm" onclick="viewEnvironment('prod')">View Details</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="env-section">
+                    <h3>Giger Environments (Ephemeral)</h3>
+                    <p class="section-desc">Temporary testing environments that auto-expire</p>
+                    
+                    <div class="giger-list">
+                        <div class="giger-card active">
+                            <div class="giger-header">
+                                <div>
+                                    <h4>⚡ giger-checkout-test</h4>
+                                    <p>Created by Mike Chen • 18 hours ago</p>
+                                </div>
+                                <span class="giger-status active">Active</span>
+                            </div>
+                            <div class="giger-body">
+                                <div class="giger-info">
+                                    <div class="info-item">
+                                        <span class="label">Expires In:</span>
+                                        <span class="value expiry-warning">6 hours</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Flags:</span>
+                                        <span class="value">8 flags (5 active)</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Based On:</span>
+                                        <span class="value">dev</span>
+                                    </div>
+                                </div>
+                                <div class="giger-actions">
+                                    <button class="btn btn-sm" onclick="viewEnvironment('giger-checkout-test')">View Details</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="extendGiger('giger-checkout-test')">⏱️ Extend Time</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteGiger('giger-checkout-test')">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="giger-card active">
+                            <div class="giger-header">
+                                <div>
+                                    <h4>⚡ giger-analytics-feature</h4>
+                                    <p>Created by Sarah Johnson • 2 days ago</p>
+                                </div>
+                                <span class="giger-status active">Active</span>
+                            </div>
+                            <div class="giger-body">
+                                <div class="giger-info">
+                                    <div class="info-item">
+                                        <span class="label">Expires In:</span>
+                                        <span class="value">22 hours</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Flags:</span>
+                                        <span class="value">12 flags (8 active)</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Based On:</span>
+                                        <span class="value">stage</span>
+                                    </div>
+                                </div>
+                                <div class="giger-actions">
+                                    <button class="btn btn-sm" onclick="viewEnvironment('giger-analytics-feature')">View Details</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="extendGiger('giger-analytics-feature')">⏱️ Extend Time</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteGiger('giger-analytics-feature')">🗑️ Delete</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="giger-card expired">
+                            <div class="giger-header">
+                                <div>
+                                    <h4>⚡ giger-payment-test</h4>
+                                    <p>Created by Tom Anderson • 4 days ago</p>
+                                </div>
+                                <span class="giger-status expired">Expired</span>
+                            </div>
+                            <div class="giger-body">
+                                <div class="giger-info">
+                                    <div class="info-item">
+                                        <span class="label">Expired:</span>
+                                        <span class="value">2 days ago</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="label">Auto-cleanup:</span>
+                                        <span class="value">In 5 days</span>
+                                    </div>
+                                </div>
+                                <div class="giger-actions">
+                                    <button class="btn btn-sm btn-danger" onclick="deleteGiger('giger-payment-test')">🗑️ Delete Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 Feature Flag Control Centre | Last Updated: Nov 3, 2025</p>
+        </footer>
+    </div>
+
+    <!-- Create Giger Modal -->
+    <div id="createGigerModal" class="modal">
+        <div class="modal-content">
+            <h3>⚡ Create Giger Environment</h3>
+            <p>Create a temporary testing environment that auto-expires</p>
+            
+            <div class="form-group">
+                <label>Environment Name *</label>
+                <div class="input-with-prefix">
+                    <span class="prefix">giger-</span>
+                    <input type="text" class="form-control" id="gigerName" placeholder="my-test-env">
+                </div>
+                <small>Use lowercase with hyphens. Full name will be: giger-[your-name]</small>
+            </div>
+
+            <div class="form-group">
+                <label>Base Environment *</label>
+                <select class="form-control" id="baseEnv">
+                    <option value="dev" selected>dev (Development)</option>
+                    <option value="stage">stage (Staging)</option>
+                    <option value="demo">demo (Demo)</option>
+                </select>
+                <small>Configuration will be copied from this environment</small>
+            </div>
+
+            <div class="form-group">
+                <label>Expiry Duration *</label>
+                <select class="form-control" id="expiryDuration">
+                    <option value="24">24 hours</option>
+                    <option value="48" selected>48 hours (2 days)</option>
+                    <option value="72">72 hours (3 days)</option>
+                    <option value="168">1 week</option>
+                </select>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>ℹ️ Note:</strong> You'll receive a Slack reminder 6 hours before expiry. You can extend or delete the environment at any time.
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeCreateGigerModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createGiger()">Create Environment</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="environments.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Feature Flag</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚩 Feature Flag Control Centre</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>John Doe (PM)</strong></span>
+            </div>
+        </header>
+
+        <nav class="nav-bar">
+            <a href="index.html">Dashboard</a>
+            <a href="create-flag.html" class="active">Create New Flag</a>
+            <a href="environments.html">Environments</a>
+            <a href="debug.html">Debug/Simulate</a>
+        </nav>
+
+        <main>
+            <div class="page-header">
+                <h2>Create New Feature Flag</h2>
+            </div>
+
+            <form class="flag-form" id="flagForm">
+                <div class="form-section">
+                    <h3>Basic Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="flagName">Flag Name *</label>
+                        <input type="text" id="flagName" name="flagName" required 
+                               placeholder="e.g., enable_new_feature" 
+                               pattern="[a-z0-9_]+"
+                               title="Only lowercase letters, numbers and underscores allowed">
+                        <small>Use lowercase with underscores. Will check for duplicates.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" 
+                                  placeholder="Describe the purpose of this feature flag"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="productTeam">Product Team / Owner *</label>
+                            <select id="productTeam" name="productTeam" required>
+                                <option value="">Select team...</option>
+                                <option value="payments">Payments Team</option>
+                                <option value="analytics">Analytics Team</option>
+                                <option value="platform">Platform Team</option>
+                                <option value="mobile">Mobile Team</option>
+                                <option value="infrastructure">Infrastructure Team</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maintainer">Maintainer Name *</label>
+                            <input type="text" id="maintainer" name="maintainer" required 
+                                   placeholder="e.g., John Doe">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="linkedTicket">Linked Epic / GTM Ticket</label>
+                        <input type="url" id="linkedTicket" name="linkedTicket" 
+                               placeholder="https://jira.company.com/browse/PROJ-123">
+                        <small>Enter JIRA, Notion, or GTM ticket URL</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="flagCategory">Flag Category *</label>
+                            <select id="flagCategory" name="flagCategory" required onchange="handleFlagCategoryChange()">
+                                <option value="">Select category...</option>
+                                <option value="custom">Custom Flag</option>
+                                <option value="killswitch">Kill Switch</option>
+                            </select>
+                            <small>Kill switches don't have expiry dates</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="expiryDate">Expiry Date <span id="expiryRequired">*</span></label>
+                            <input type="date" id="expiryDate" name="expiryDate" required>
+                            <small>Defaults to +90 days for custom flags</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="flagType">Value Type *</label>
+                        <select id="flagType" name="flagType" required onchange="handleFlagTypeChange()">
+                            <option value="">Select type...</option>
+                            <option value="boolean">Boolean</option>
+                            <option value="string">String</option>
+                            <option value="number">Number</option>
+                            <option value="object">Object</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metadata">Metadata (Optional)</label>
+                        <textarea id="metadata" name="metadata" rows="3" 
+                                  placeholder='{"category": "experimental", "team": "growth"}'></textarea>
+                        <small>Add any custom metadata as JSON</small>
+                    </div>
+                </div>
+
+                <div class="form-section environment-targeting-section">
+                    <h3>Environment & Targeting</h3>
+                    <small class="section-description">Select an environment to configure targeting rules. Each environment has independent settings.</small>
+                    
+                    <!-- Environment Tiles -->
+                    <div class="environment-tiles-container" id="envTilesContainer">
+                        <div class="env-tile active" data-env="default" onclick="selectEnvironmentTile(event, 'default')">
+                            <div class="env-tile-header">
+                                <span class="env-tile-dot blue"></span>
+                                <h4 class="env-tile-name">Default</h4>
+                            </div>
+                            <p class="env-tile-description">Base configuration</p>
+                        </div>
+                        
+                        <div class="env-tile" data-env="dev" onclick="selectEnvironmentTile(event, 'dev')">
+                            <div class="env-tile-header">
+                                <span class="env-tile-dot orange"></span>
+                                <h4 class="env-tile-name">Development</h4>
+                            </div>
+                            <p class="env-tile-description">Dev environment</p>
+                        </div>
+                        
+                        <div class="env-tile" data-env="stage" onclick="selectEnvironmentTile(event, 'stage')">
+                            <div class="env-tile-header">
+                                <span class="env-tile-dot gray"></span>
+                                <h4 class="env-tile-name">Staging</h4>
+                            </div>
+                            <p class="env-tile-description">Stage environment</p>
+                        </div>
+                        
+                        <div class="env-tile" data-env="prod" onclick="selectEnvironmentTile(event, 'prod')">
+                            <div class="env-tile-header">
+                                <span class="env-tile-dot green"></span>
+                                <h4 class="env-tile-name">Production</h4>
+                            </div>
+                            <p class="env-tile-description">Prod environment</p>
+                        </div>
+                        
+                        <div class="env-tile env-tile-add" onclick="showAddEnvironmentDialog()">
+                            <div class="env-tile-add-content">
+                                <span class="env-tile-add-icon">+</span>
+                                <p class="env-tile-add-text">Add Environment</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environment Configuration Overlay -->
+                    <div class="environment-config-overlay" id="envConfigOverlay">
+                        <!-- This will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Variations Section -->
+                <div class="form-section" id="variations-section">
+                    <h3>Variations <span class="tab-badge">JSON</span></h3>
+                    <small class="section-description">The defined variations this flag uses in each environment in this project.</small>
+                    
+                    <div id="variationsContainer" class="variations-container">
+                        <!-- Variations will be added here -->
+                    </div>
+
+                    <button type="button" class="btn-add-variation" onclick="addVariation()">
+                        <span class="plus-icon">+</span> Add variation
+                    </button>
+                </div>
+
+                <div class="form-section">
+                    <h3>Dependencies</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prerequisiteFlag">Prerequisite Flag (Optional)</label>
+                            <select id="prerequisiteFlag" name="prerequisiteFlag">
+                                <option value="">None</option>
+                                <option value="enable_new_dashboard">enable_new_dashboard</option>
+                                <option value="payment_v2_enabled">payment_v2_enabled</option>
+                                <option value="enable_notifications">enable_notifications</option>
+                                <option value="user_authentication_v2">user_authentication_v2</option>
+                            </select>
+                            <small>Select a flag that must be enabled for this flag to work</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prerequisiteVariation">Required Variation</label>
+                            <input type="text" id="prerequisiteVariation" name="prerequisiteVariation" 
+                                   placeholder="e.g., true, variant_a">
+                            <small>The variation value required from the prerequisite flag</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="validateJSON()">Validate JSON</button>
+                    <button type="submit" class="btn btn-primary">Create Flag</button>
+                </div>
+            </form>
+
+            <div id="successMessage" class="message success" style="display: none;">
+                <strong>✓ Success!</strong> Feature flag created successfully!
+                <ul>
+                    <li>Flag registered in feature flag service</li>
+                    <li>Audit log entry created</li>
+                    <li>Slack notification sent to Engineering team</li>
+                    <li>Flag created in all selected environments</li>
+                    <li>Status: Inactive (0%)</li>
+                </ul>
+                <a href="index.html">Back to Dashboard</a>
+            </div>
+
+            <div id="errorMessage" class="message error" style="display: none;">
+                <strong>✗ Error!</strong> <span id="errorText"></span>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 Feature Flag Control Centre | Last Updated: Nov 3, 2025</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+

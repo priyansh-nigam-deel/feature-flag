@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Details - enable_new_dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚩 Feature Flag Control Centre</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>John Doe (PM)</strong></span>
+            </div>
+        </header>
+
+        <nav class="nav-bar">
+            <a href="index.html">Dashboard</a>
+            <a href="create-flag.html">Create New Flag</a>
+            <a href="environments.html">Environments</a>
+            <a href="debug.html">Debug/Simulate</a>
+        </nav>
+
+        <main>
+            <div class="flag-header">
+                <div>
+                    <div class="breadcrumb">
+                        <a href="index.html">Flags</a> / enable_new_dashboard
+                    </div>
+                    <h2>enable_new_dashboard</h2>
+                    <p class="flag-description">Enable new analytics dashboard for users</p>
+                    <div class="flag-metadata">
+                        <span><strong>Owner:</strong> Sarah Johnson</span>
+                        <span><strong>Team:</strong> Analytics Team</span>
+                        <span><strong>Maintainer:</strong> Mike Chen</span>
+                        <span><strong>Created:</strong> Oct 1, 2025</span>
+                        <span><strong>Expires:</strong> Dec 15, 2025</span>
+                        <span><strong>Type:</strong> Boolean</span>
+                    </div>
+                </div>
+                <div class="flag-actions">
+                    <button class="btn btn-secondary" onclick="copyFlagLink()">📋 Copy Link</button>
+                    <button class="btn btn-danger" onclick="showDeleteModal()">🗑️ Delete Flag</button>
+                </div>
+            </div>
+
+            <!-- Environment Tiles Section -->
+            <div class="environment-section">
+                <h3>Select Environment</h3>
+                <div class="environment-tiles-container" id="envTilesContainer">
+                    <div class="env-tile" data-env="default" onclick="selectEnvironmentTileDetail(event, 'default')">
+                        <div class="env-tile-header">
+                            <span class="env-tile-dot blue"></span>
+                            <h4 class="env-tile-name">Default</h4>
+                        </div>
+                        <p class="env-tile-description">Base configuration</p>
+                    </div>
+                    
+                    <div class="env-tile" data-env="dev" onclick="selectEnvironmentTileDetail(event, 'dev')">
+                        <div class="env-tile-header">
+                            <span class="env-tile-dot orange"></span>
+                            <h4 class="env-tile-name">Development</h4>
+                        </div>
+                        <p class="env-tile-description">Dev environment</p>
+                    </div>
+                    
+                    <div class="env-tile" data-env="stage" onclick="selectEnvironmentTileDetail(event, 'stage')">
+                        <div class="env-tile-header">
+                            <span class="env-tile-dot gray"></span>
+                            <h4 class="env-tile-name">Staging</h4>
+                        </div>
+                        <p class="env-tile-description">Stage environment</p>
+                    </div>
+                    
+                    <div class="env-tile active" data-env="prod" onclick="selectEnvironmentTileDetail(event, 'prod')">
+                        <div class="env-tile-header">
+                            <span class="env-tile-dot green"></span>
+                            <h4 class="env-tile-name">Production</h4>
+                        </div>
+                        <p class="env-tile-description">Prod environment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environment Configuration Overlay -->
+            <div class="environment-config-overlay" id="envConfigOverlayDetail" style="margin-top: 30px;">
+                <!-- This will be populated dynamically based on selected environment -->
+            </div>
+
+            <div id="environmentContent" class="env-content">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('variations')">Variations</button>
+                    <button class="tab" onclick="switchTab('rollout')">Rollout History</button>
+                    <button class="tab" onclick="switchTab('metrics')">Metrics</button>
+                    <button class="tab" onclick="switchTab('audit')">Audit Log</button>
+                    <button class="tab" onclick="switchTab('settings')">Settings</button>
+                </div>
+
+                <!-- Variations Tab -->
+                <div id="variationsTab" class="tab-content active">
+                    <div class="variations-section">
+                        <h3>Flag Variations</h3>
+                        <p class="help-text">Manage the variations this flag can serve across all environments.</p>
+                        
+                        <div class="form-group">
+                            <label>Value Type</label>
+                            <select class="form-control" id="flagTypeDetail" onchange="handleFlagTypeChangeDetail()">
+                                <option value="boolean">Boolean</option>
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="object">Object (JSON)</option>
+                            </select>
+                        </div>
+
+                        <div id="variationsContainerDetail" class="variations-container">
+                            <!-- Variations will be populated here -->
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="saveVariations()">Save Variations</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rollout History Tab -->
+                <div id="rolloutTab" class="tab-content">
+                    <div class="rollout-section">
+                        <h3>Rollout History & Version Control</h3>
+                        <p class="help-text">View rollout history and perform rollbacks if needed. Targeting rules and rollout settings are configured per-environment above.</p>
+                        
+                        <div class="rollback-section">
+                            <h4>Emergency Rollback</h4>
+                            <div class="alert alert-warning">
+                                <strong>⚠️ Emergency Rollback</strong>
+                                <p>Instantly revert to the last stable configuration or safe default value.</p>
+                                <button class="btn btn-danger" onclick="showRollbackModal()">🔄 Rollback Now</button>
+                            </div>
+                            
+                            <h4>Version History</h4>
+                            <div class="version-list">
+                                <div class="version-item current">
+                                    <div class="version-badge">Current</div>
+                                    <div class="version-content">
+                                        <strong>v4</strong> - Updated targeting rules in prod
+                                        <p>Updated by Sarah Johnson on Nov 3, 2025 8:00 AM</p>
+                                    </div>
+                                    <button class="btn btn-sm">View Diff</button>
+                                </div>
+                                <div class="version-item stable">
+                                    <div class="version-badge">Stable</div>
+                                    <div class="version-content">
+                                        <strong>v3</strong> - Added percentage rollout rule
+                                        <p>Updated by Sarah Johnson on Nov 2, 2025 8:00 AM</p>
+                                    </div>
+                                    <button class="btn btn-sm" onclick="rollbackToVersion(3)">Rollback to v3</button>
+                                </div>
+                                <div class="version-item">
+                                    <div class="version-badge">v2</div>
+                                    <div class="version-content">
+                                        <strong>v2</strong> - Initial rollout to 10%
+                                        <p>Updated by Mike Chen on Nov 1, 2025 8:00 AM</p>
+                                    </div>
+                                    <button class="btn btn-sm" onclick="rollbackToVersion(2)">Rollback to v2</button>
+                                </div>
+                                <div class="version-item">
+                                    <div class="version-badge">v1</div>
+                                    <div class="version-content">
+                                        <strong>v1</strong> - Flag created
+                                        <p>Created by Sarah Johnson on Oct 1, 2025 10:00 AM</p>
+                                    </div>
+                                    <button class="btn btn-sm" onclick="rollbackToVersion(1)">Rollback to v1</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="metricsTab" class="tab-content">
+                    <div class="metrics-section">
+                        <h3>Evaluation Metrics</h3>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">Total Evaluations (24h)</div>
+                                <div class="metric-value">45,892</div>
+                                <div class="metric-trend">↑ 12% from yesterday</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Unique Organizations</div>
+                                <div class="metric-value">1,234</div>
+                                <div class="metric-trend">↑ 8% from yesterday</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Unique Users</div>
+                                <div class="metric-value">8,567</div>
+                                <div class="metric-trend">↑ 15% from yesterday</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Error Rate</div>
+                                <div class="metric-value">0.02%</div>
+                                <div class="metric-trend-down">↓ 0.01% from yesterday</div>
+                            </div>
+                        </div>
+
+                        <h4>Evaluation Graph (Last 7 Days)</h4>
+                        <div class="chart-placeholder">
+                            <div class="chart-bar" style="height: 60%"><span>Oct 28</span></div>
+                            <div class="chart-bar" style="height: 65%"><span>Oct 29</span></div>
+                            <div class="chart-bar" style="height: 70%"><span>Oct 30</span></div>
+                            <div class="chart-bar" style="height: 85%"><span>Oct 31</span></div>
+                            <div class="chart-bar" style="height: 90%"><span>Nov 1</span></div>
+                            <div class="chart-bar" style="height: 95%"><span>Nov 2</span></div>
+                            <div class="chart-bar" style="height: 100%"><span>Nov 3</span></div>
+                        </div>
+
+                        <h4>Variation Distribution</h4>
+                        <table class="metrics-table">
+                            <thead>
+                                <tr>
+                                    <th>Variation</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                    <th>Organizations</th>
+                                    <th>Users</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="variant-badge true">true</span></td>
+                                    <td>34,419</td>
+                                    <td>75%</td>
+                                    <td>925</td>
+                                    <td>6,425</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="variant-badge false">false</span></td>
+                                    <td>11,473</td>
+                                    <td>25%</td>
+                                    <td>309</td>
+                                    <td>2,142</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="auditTab" class="tab-content">
+                    <div class="audit-section">
+                        <h3>Audit Log</h3>
+                        <div class="audit-filters">
+                            <select class="filter-select">
+                                <option>All Actions</option>
+                                <option>CREATE</option>
+                                <option>UPDATE</option>
+                                <option>ROLLOUT</option>
+                                <option>ROLLBACK</option>
+                            </select>
+                            <input type="date" class="filter-select">
+                        </div>
+                        <div class="audit-timeline">
+                            <div class="audit-item">
+                                <div class="audit-time">Nov 3, 2025 8:00 AM</div>
+                                <div class="audit-content">
+                                    <div class="audit-action">ROLLOUT_UPDATE</div>
+                                    <div class="audit-actor">Sarah Johnson</div>
+                                    <div class="audit-details">Updated rollout percentage from 30% to 75% in prod environment</div>
+                                    <button class="btn-link" onclick="showAuditDiff(1)">View Changes</button>
+                                </div>
+                            </div>
+                            <div class="audit-item">
+                                <div class="audit-time">Nov 2, 2025 8:00 AM</div>
+                                <div class="audit-content">
+                                    <div class="audit-action">ROLLOUT_UPDATE</div>
+                                    <div class="audit-actor">Sarah Johnson</div>
+                                    <div class="audit-details">Updated rollout percentage from 10% to 30% in prod environment</div>
+                                    <button class="btn-link" onclick="showAuditDiff(2)">View Changes</button>
+                                </div>
+                            </div>
+                            <div class="audit-item">
+                                <div class="audit-time">Nov 1, 2025 8:00 AM</div>
+                                <div class="audit-content">
+                                    <div class="audit-action">TARGETING_ON</div>
+                                    <div class="audit-actor">Mike Chen</div>
+                                    <div class="audit-details">Enabled targeting in prod environment with 10% rollout</div>
+                                    <button class="btn-link" onclick="showAuditDiff(3)">View Changes</button>
+                                </div>
+                            </div>
+                            <div class="audit-item">
+                                <div class="audit-time">Oct 28, 2025 2:30 PM</div>
+                                <div class="audit-content">
+                                    <div class="audit-action">TARGETING_RULES_UPDATE</div>
+                                    <div class="audit-actor">Sarah Johnson</div>
+                                    <div class="audit-details">Added targeting rule for Enterprise Customers</div>
+                                    <button class="btn-link" onclick="showAuditDiff(4)">View Changes</button>
+                                </div>
+                            </div>
+                            <div class="audit-item">
+                                <div class="audit-time">Oct 1, 2025 10:00 AM</div>
+                                <div class="audit-content">
+                                    <div class="audit-action">FLAG_CREATED</div>
+                                    <div class="audit-actor">Sarah Johnson</div>
+                                    <div class="audit-details">Created feature flag enable_new_dashboard</div>
+                                    <button class="btn-link" onclick="showAuditDiff(5)">View Changes</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settingsTab" class="tab-content">
+                    <div class="settings-section">
+                        <h3>Flag Settings</h3>
+                        
+                        <div class="form-group">
+                            <label>Flag Name (Read-only)</label>
+                            <input type="text" class="form-control" id="flagNameDetail" value="enable_new_dashboard" readonly disabled style="background: #f5f5f5; cursor: not-allowed;">
+                            <small>Flag name cannot be changed after creation</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" id="flagDescriptionDetail" rows="3">Enable new analytics dashboard for users</textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Flag Category</label>
+                                <select class="form-control" id="flagCategoryDetail" onchange="handleFlagCategoryChangeDetail()">
+                                    <option value="custom" selected>Custom Flag</option>
+                                    <option value="killswitch">Kill Switch</option>
+                                </select>
+                                <small>Kill switches don't have expiry dates</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Expiry Date <span id="expiryRequiredDetail">*</span></label>
+                                <input type="date" class="form-control" id="expiryDateDetail" value="2025-12-15">
+                                <small>Cleanup date for this flag</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Maintainer</label>
+                                <input type="text" class="form-control" id="maintainerDetail" value="Mike Chen">
+                            </div>
+                            <div class="form-group">
+                                <label>Product Team</label>
+                                <select class="form-control" id="teamDetail">
+                                    <option selected>Analytics Team</option>
+                                    <option>Payments Team</option>
+                                    <option>Platform Team</option>
+                                    <option>Contracts Team</option>
+                                    <option>Platform Engineering</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Linked Epic / Ticket</label>
+                            <input type="url" class="form-control" id="linkedTicketDetail" value="https://jira.company.com/browse/ANAL-456">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Metadata (Optional)</label>
+                            <textarea class="form-control" id="metadataDetail" rows="4" placeholder='{"key": "value"}'></textarea>
+                            <small>Additional metadata in JSON format</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Cleanup Recommendation</strong>
+                            <p>This flag has been active for 33 days. Consider planning for cleanup once rollout is complete.</p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 Feature Flag Control Centre | Last Updated: Nov 3, 2025</p>
+        </footer>
+    </div>
+
+    <!-- Rollback Modal -->
+    <div id="rollbackModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Confirm Rollback</h3>
+            <p>Are you sure you want to rollback this feature flag?</p>
+            <div class="form-group">
+                <label>Rollback Reason *</label>
+                <textarea class="form-control" rows="3" placeholder="e.g., High error rate in production"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeRollbackModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmRollback()">Confirm Rollback</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>🗑️ Delete Feature Flag</h3>
+            <p><strong>Warning:</strong> This action will permanently delete the flag after a 24-hour grace period.</p>
+            <div class="deletion-checklist">
+                <label class="checkbox-label">
+                    <input type="checkbox"> Flag is no longer referenced in codebase
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox"> All environments show 0 evaluations
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox"> No active dashboards depend on this flag
+                </label>
+            </div>
+            <div class="form-group">
+                <label>Type flag name to confirm: <strong>enable_new_dashboard</strong></label>
+                <input type="text" class="form-control" id="deleteFlagName">
+            </div>
+            <div class="form-group">
+                <label>Deletion Reason *</label>
+                <textarea class="form-control" rows="2" placeholder="e.g., Feature fully rolled out"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete Flag</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="flag-detail.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug & Simulate</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚩 Feature Flag Control Centre</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>John Doe (PM)</strong></span>
+            </div>
+        </header>
+
+        <nav class="nav-bar">
+            <a href="index.html">Dashboard</a>
+            <a href="create-flag.html">Create New Flag</a>
+            <a href="environments.html">Environments</a>
+            <a href="debug.html" class="active">Debug/Simulate</a>
+        </nav>
+
+        <main>
+            <div class="page-header">
+                <h2>🔍 Evaluation Simulation & Debugging</h2>
+                <p>Test flag evaluation for specific users or organizations</p>
+            </div>
+
+            <div class="debug-container">
+                <div class="debug-form">
+                    <h3>Evaluation Context</h3>
+                    
+                    <div class="form-group">
+                        <label>Environment *</label>
+                        <select class="form-control" id="debugEnv">
+                            <option value="prod">prod</option>
+                            <option value="stage">stage</option>
+                            <option value="dev" selected>dev</option>
+                            <option value="demo">demo</option>
+                            <option value="giger-checkout-test">giger-checkout-test</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Targeting Key Type *</label>
+                        <select class="form-control" id="keyType" onchange="updateContextFields()">
+                            <option value="org" selected>Organization</option>
+                            <option value="user">User</option>
+                            <option value="custom">Custom Context</option>
+                        </select>
+                    </div>
+
+                    <div id="orgContext" class="context-section">
+                        <div class="form-group">
+                            <label>Organization ID *</label>
+                            <input type="text" class="form-control" id="orgId" placeholder="e.g., 12345">
+                        </div>
+                        <div class="form-group">
+                            <label>Organization Plan</label>
+                            <select class="form-control" id="orgPlan">
+                                <option value="">Select plan...</option>
+                                <option value="free">Free</option>
+                                <option value="starter">Starter</option>
+                                <option value="professional">Professional</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Region</label>
+                            <select class="form-control" id="orgRegion">
+                                <option value="">Select region...</option>
+                                <option value="US">US</option>
+                                <option value="EU">EU</option>
+                                <option value="APAC">APAC</option>
+                                <option value="LATAM">LATAM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="isInternal"> Internal/Test Account
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="userContext" class="context-section" style="display: none;">
+                        <div class="form-group">
+                            <label>User ID *</label>
+                            <input type="text" class="form-control" id="userId" placeholder="e.g., 1001">
+                        </div>
+                        <div class="form-group">
+                            <label>User Email</label>
+                            <input type="email" class="form-control" id="userEmail" placeholder="user@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>User Role</label>
+                            <select class="form-control" id="userRole">
+                                <option value="">Select role...</option>
+                                <option value="admin">Admin</option>
+                                <option value="member">Member</option>
+                                <option value="guest">Guest</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="customContext" class="context-section" style="display: none;">
+                        <div class="form-group">
+                            <label>Custom Context (JSON) *</label>
+                            <textarea class="form-control json-input" id="customJson" rows="10" placeholder='{
+  "user": {
+    "id": "1001",
+    "email": "user@example.com",
+    "role": "admin"
+  },
+  "org": {
+    "id": "12345",
+    "plan": "enterprise",
+    "region": "US"
+  }
+}'></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Select Flag to Evaluate (Optional)</label>
+                        <select class="form-control" id="specificFlag">
+                            <option value="">All flags</option>
+                            <option value="enable_new_dashboard">enable_new_dashboard</option>
+                            <option value="payment_v2_enabled">payment_v2_enabled</option>
+                            <option value="theme_variant">theme_variant</option>
+                            <option value="max_upload_size">max_upload_size</option>
+                            <option value="enable_notifications">enable_notifications</option>
+                        </select>
+                        <small>Leave empty to evaluate all flags</small>
+                    </div>
+
+                    <button class="btn btn-primary btn-large" onclick="runEvaluation()">
+                        🔍 Run Evaluation
+                    </button>
+                </div>
+
+                <div class="debug-results" id="resultsSection" style="display: none;">
+                    <h3>Evaluation Results</h3>
+                    
+                    <div class="result-summary">
+                        <div class="summary-item">
+                            <span class="label">Environment:</span>
+                            <span class="value" id="resultEnv">dev</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Context:</span>
+                            <span class="value" id="resultContext">org: 12345</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Flags Evaluated:</span>
+                            <span class="value" id="resultCount">6</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Evaluation Time:</span>
+                            <span class="value" id="resultTime">12ms</span>
+                        </div>
+                    </div>
+
+                    <div class="results-list" id="resultsList">
+                        <!-- Results will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2025 Feature Flag Control Centre | Last Updated: Nov 3, 2025</p>
+        </footer>
+    </div>
+
+    <script src="debug.js"></script>
+</body>
+</html>
+
