@@ -177,69 +177,237 @@
 
                 <div id="metricsTab" class="tab-content">
                     <div class="metrics-section">
-                        <h3>Evaluation Metrics</h3>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-label">Total Evaluations (24h)</div>
-                                <div class="metric-value">45,892</div>
-                                <div class="metric-trend">↑ 12% from yesterday</div>
+                        <div class="metrics-header">
+                            <div class="metrics-header-content">
+                                <h3>🔧 flagd Metrics & Monitoring</h3>
+                                <p class="metrics-description">Real-time metrics from flagd feature flag evaluation daemon</p>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Unique Organizations</div>
-                                <div class="metric-value">1,234</div>
-                                <div class="metric-trend">↑ 8% from yesterday</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Unique Users</div>
-                                <div class="metric-value">8,567</div>
-                                <div class="metric-trend">↑ 15% from yesterday</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Error Rate</div>
-                                <div class="metric-value">0.02%</div>
-                                <div class="metric-trend-down">↓ 0.01% from yesterday</div>
+                            <div class="metrics-header-actions">
+                                <button class="btn btn-secondary" onclick="showExternalDashboard()">
+                                    📊 Open in Grafana
+                                </button>
+                                <button class="btn btn-secondary" onclick="refreshMetrics()">
+                                    🔄 Refresh
+                                </button>
+                                <select class="metrics-time-range" onchange="updateTimeRange(this.value)">
+                                    <option value="1h">Last 1 hour</option>
+                                    <option value="6h">Last 6 hours</option>
+                                    <option value="24h" selected>Last 24 hours</option>
+                                    <option value="7d">Last 7 days</option>
+                                    <option value="30d">Last 30 days</option>
+                                </select>
                             </div>
                         </div>
 
-                        <h4>Evaluation Graph (Last 7 Days)</h4>
-                        <div class="chart-placeholder">
-                            <div class="chart-bar" style="height: 60%"><span>Oct 28</span></div>
-                            <div class="chart-bar" style="height: 65%"><span>Oct 29</span></div>
-                            <div class="chart-bar" style="height: 70%"><span>Oct 30</span></div>
-                            <div class="chart-bar" style="height: 85%"><span>Oct 31</span></div>
-                            <div class="chart-bar" style="height: 90%"><span>Nov 1</span></div>
-                            <div class="chart-bar" style="height: 95%"><span>Nov 2</span></div>
-                            <div class="chart-bar" style="height: 100%"><span>Nov 3</span></div>
+                        <!-- Prometheus-style Metric Panels -->
+                        <div class="prometheus-panels">
+                            <!-- Panel 1: Request Duration -->
+                            <div class="metric-panel">
+                                <div class="metric-panel-header">
+                                    <div class="metric-panel-title">
+                                        <h4>Request Duration</h4>
+                                        <span class="metric-panel-subtitle">http.server.request.duration</span>
+                                    </div>
+                                    <select class="metric-selector" onchange="changeMetricType(this, 'panel1')">
+                                        <option value="request_duration" selected>Request Duration (ms)</option>
+                                        <option value="response_size">Response Size (KB)</option>
+                                        <option value="active_requests">Active Requests</option>
+                                        <option value="error_rate">Error Rate (%)</option>
+                                    </select>
+                                </div>
+                                <div class="metric-panel-body">
+                                    <canvas id="metricChart1" class="metric-chart"></canvas>
+                                </div>
+                                <div class="metric-panel-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Current:</span>
+                                        <span class="stat-value">45.2 ms</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Avg:</span>
+                                        <span class="stat-value">42.8 ms</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Min:</span>
+                                        <span class="stat-value">35.1 ms</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Max:</span>
+                                        <span class="stat-value">89.5 ms</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel 2: Flag Impressions -->
+                            <div class="metric-panel">
+                                <div class="metric-panel-header">
+                                    <div class="metric-panel-title">
+                                        <h4>Flag Evaluations</h4>
+                                        <span class="metric-panel-subtitle">feature_flag.flagd.impression</span>
+                                    </div>
+                                    <select class="metric-selector" onchange="changeMetricType(this, 'panel2')">
+                                        <option value="impressions" selected>Impressions (count/min)</option>
+                                        <option value="unique_orgs">Unique Organizations</option>
+                                        <option value="unique_users">Unique Users</option>
+                                        <option value="success_rate">Success Rate (%)</option>
+                                    </select>
+                                </div>
+                                <div class="metric-panel-body">
+                                    <canvas id="metricChart2" class="metric-chart"></canvas>
+                                </div>
+                                <div class="metric-panel-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Current:</span>
+                                        <span class="stat-value">1,912/min</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Avg:</span>
+                                        <span class="stat-value">1,870/min</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Total (24h):</span>
+                                        <span class="stat-value">45,892</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel 3: Evaluation Reasons -->
+                            <div class="metric-panel">
+                                <div class="metric-panel-header">
+                                    <div class="metric-panel-title">
+                                        <h4>Evaluation Reasons</h4>
+                                        <span class="metric-panel-subtitle">feature_flag.flagd.result.reason</span>
+                                    </div>
+                                    <select class="metric-selector" onchange="changeMetricType(this, 'panel3')">
+                                        <option value="reasons" selected>By Reason</option>
+                                        <option value="targeting_match">Targeting Match Only</option>
+                                        <option value="default">Default Only</option>
+                                        <option value="errors">Errors Only</option>
+                                    </select>
+                                </div>
+                                <div class="metric-panel-body">
+                                    <canvas id="metricChart3" class="metric-chart"></canvas>
+                                </div>
+                                <div class="metric-panel-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #10b981;"></span>
+                                        <span class="legend-label">Targeting Match (75%)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #3b82f6;"></span>
+                                        <span class="legend-label">Default (19.5%)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #f59e0b;"></span>
+                                        <span class="legend-label">Disabled (5%)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #ef4444;"></span>
+                                        <span class="legend-label">Error (0.5%)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel 4: Variation Distribution -->
+                            <div class="metric-panel">
+                                <div class="metric-panel-header">
+                                    <div class="metric-panel-title">
+                                        <h4>Variation Performance</h4>
+                                        <span class="metric-panel-subtitle">By variation over time</span>
+                                    </div>
+                                    <select class="metric-selector" onchange="changeMetricType(this, 'panel4')">
+                                        <option value="variations" selected>All Variations</option>
+                                        <option value="var_true">True Only</option>
+                                        <option value="var_false">False Only</option>
+                                        <option value="compare">Compare Variations</option>
+                                    </select>
+                                </div>
+                                <div class="metric-panel-body">
+                                    <canvas id="metricChart4" class="metric-chart"></canvas>
+                                </div>
+                                <div class="metric-panel-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #667eea;"></span>
+                                        <span class="legend-label">true (75%)</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color" style="background: #94a3b8;"></span>
+                                        <span class="legend-label">false (25%)</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <h4>Variation Distribution</h4>
-                        <table class="metrics-table">
-                            <thead>
-                                <tr>
-                                    <th>Variation</th>
-                                    <th>Count</th>
-                                    <th>Percentage</th>
-                                    <th>Organizations</th>
-                                    <th>Users</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="variant-badge true">true</span></td>
-                                    <td>34,419</td>
-                                    <td>75%</td>
-                                    <td>925</td>
-                                    <td>6,425</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="variant-badge false">false</span></td>
-                                    <td>11,473</td>
-                                    <td>25%</td>
-                                    <td>309</td>
-                                    <td>2,142</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <!-- External Dashboard Embed -->
+                        <div class="external-dashboard-section">
+                            <div class="section-header">
+                                <h4>📊 External Monitoring Dashboards</h4>
+                                <p class="section-note">Connect to your existing monitoring tools</p>
+                            </div>
+                            
+                            <div class="dashboard-tabs">
+                                <button class="dashboard-tab active" onclick="switchDashboard('grafana')">Grafana</button>
+                                <button class="dashboard-tab" onclick="switchDashboard('prometheus')">Prometheus</button>
+                                <button class="dashboard-tab" onclick="switchDashboard('datadog')">Datadog</button>
+                            </div>
+
+                            <div class="dashboard-iframe-container" id="grafanaDashboard">
+                                <div class="iframe-placeholder">
+                                    <div class="placeholder-icon">📊</div>
+                                    <h5>Grafana Dashboard</h5>
+                                    <p>Embed your Grafana dashboard to visualize flagd metrics in real-time</p>
+                                    <div class="iframe-config">
+                                        <input type="text" class="iframe-url-input" placeholder="Enter Grafana dashboard URL or embed code" />
+                                        <button class="btn btn-primary" onclick="embedDashboard('grafana')">Load Dashboard</button>
+                                    </div>
+                                    <small>Example: https://grafana.company.com/d/flag-dashboard</small>
+                                </div>
+                                <!-- <iframe src="" frameborder="0" class="dashboard-iframe"></iframe> -->
+                            </div>
+
+                            <div class="dashboard-iframe-container" id="prometheusDashboard" style="display: none;">
+                                <div class="iframe-placeholder">
+                                    <div class="placeholder-icon">🔥</div>
+                                    <h5>Prometheus Dashboard</h5>
+                                    <p>Connect to Prometheus to query and visualize metrics</p>
+                                    <div class="iframe-config">
+                                        <input type="text" class="iframe-url-input" placeholder="Enter Prometheus URL" value="http://prometheus:9090" />
+                                        <button class="btn btn-primary" onclick="embedDashboard('prometheus')">Load Dashboard</button>
+                                    </div>
+                                    <div class="prometheus-queries">
+                                        <h6>Example Queries:</h6>
+                                        <code>rate(http_server_request_duration_sum[5m])</code>
+                                        <code>feature_flag_flagd_impression_total</code>
+                                        <code>feature_flag_flagd_result_reason{flag="enable_new_dashboard"}</code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-iframe-container" id="datadogDashboard" style="display: none;">
+                                <div class="iframe-placeholder">
+                                    <div class="placeholder-icon">🐶</div>
+                                    <h5>Datadog Dashboard</h5>
+                                    <p>Embed Datadog dashboards for comprehensive monitoring</p>
+                                    <div class="iframe-config">
+                                        <input type="text" class="iframe-url-input" placeholder="Enter Datadog dashboard embed URL" />
+                                        <button class="btn btn-primary" onclick="embedDashboard('datadog')">Load Dashboard</button>
+                                    </div>
+                                    <small>Get embed URL from your Datadog dashboard settings</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Note -->
+                        <div class="metrics-info" style="margin-top: 40px;">
+                            <h5>📝 About flagd Metrics</h5>
+                            <p>These metrics are exposed by the flagd feature flag evaluation daemon using OpenTelemetry (OTLP) protocol. The charts above visualize time-series data from your monitoring backend.</p>
+                            <p><strong>Note:</strong> Metric names may vary based on your monitoring tool. For example, OTLP to Prometheus transformations follow <a href="https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/" target="_blank">this specification</a>.</p>
+                            <div class="metrics-links">
+                                <a href="https://flagd.dev" target="_blank" class="metric-link">📚 flagd Documentation</a>
+                                <a href="#" class="metric-link">🔧 Configure Monitoring</a>
+                                <a href="#" class="metric-link">📊 View in Datadog</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -431,6 +599,7 @@
         </div>
     </div>
 
+    <script src="metrics-charts.js"></script>
     <script src="flag-detail.js"></script>
 </body>
 </html>
