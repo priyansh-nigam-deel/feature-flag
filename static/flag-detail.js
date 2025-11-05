@@ -376,6 +376,11 @@ function buildEnvironmentOverlayDetail(envName) {
                 <span class="env-tile-dot ${colorClass}"></span>
                 <h4>${displayName} Configuration</h4>
             </div>
+            <div class="env-config-actions">
+                <button type="button" class="btn-copy-env" onclick="showCopyEnvironmentDialogDetail('${envName}')" title="Copy configuration to another environment">
+                    📋 Copy to...
+                </button>
+            </div>
         </div>
         
         ${source === 'default' ? `
@@ -522,6 +527,184 @@ function saveEnvironmentConfigDetail(envName) {
     console.log(`${isPattern ? 'Pattern' : 'Environment'} config saved for ${envName}:`, targetConfig);
 }
 
+// Get all available environments from tiles (detail page)
+function getAllAvailableEnvironmentsDetail() {
+    const tiles = document.querySelectorAll('.env-tile[data-env]');
+    const environments = [];
+    
+    tiles.forEach(tile => {
+        const envName = tile.getAttribute('data-env');
+        if (envName) {
+            const isPattern = tile.getAttribute('data-pattern') === 'true';
+            const displayName = tile.querySelector('.env-tile-name')?.textContent.trim() || envName;
+            environments.push({
+                name: envName,
+                displayName: displayName,
+                isPattern: isPattern
+            });
+        }
+    });
+    
+    return environments;
+}
+
+// Show copy environment dialog (detail page)
+function showCopyEnvironmentDialogDetail(sourceEnvName) {
+    // Close any existing dropdown
+    const existingDropdown = document.getElementById('copy-env-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+        return;
+    }
+    
+    // Get all available environments except the source
+    const allEnvs = getAllAvailableEnvironmentsDetail();
+    const targetEnvs = allEnvs.filter(env => env.name !== sourceEnvName);
+    
+    if (targetEnvs.length === 0) {
+        alert('No other environments available to copy to.');
+        return;
+    }
+    
+    // Get the actions container
+    const actionsContainer = document.querySelector('.env-config-actions');
+    if (!actionsContainer) return;
+    
+    // Create dropdown
+    const dropdownHtml = `
+        <div id="copy-env-dropdown" class="env-copy-dropdown">
+            <div class="copy-dropdown-header">Copy configuration to:</div>
+            ${targetEnvs.map(env => `
+                <div class="env-dropdown-item" onclick="copyEnvironmentConfigDetail('${sourceEnvName}', '${env.name}')">
+                    <span class="env-tile-dot ${env.isPattern ? 'yellow' : 'gray'}"></span>
+                    ${env.displayName}
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    actionsContainer.insertAdjacentHTML('beforeend', dropdownHtml);
+    
+    // Close dropdown when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', function closeDropdown(e) {
+            const dropdown = document.getElementById('copy-env-dropdown');
+            const copyButton = document.querySelector('.btn-copy-env');
+            if (dropdown && !dropdown.contains(e.target) && !copyButton?.contains(e.target)) {
+                dropdown.remove();
+                document.removeEventListener('click', closeDropdown);
+            }
+        });
+    }, 100);
+}
+
+// Copy environment configuration (detail page)
+function copyEnvironmentConfigDetail(sourceEnvName, targetEnvName) {
+    // Close dropdown
+    const dropdown = document.getElementById('copy-env-dropdown');
+    if (dropdown) dropdown.remove();
+    
+    // Save current source config first (in case user made changes)
+    saveEnvironmentConfigDetail(sourceEnvName);
+    
+    // Get source configuration from saved config
+    const sourceResult = getEnvironmentConfigDetail(sourceEnvName);
+    const sourceConfig = sourceResult.config;
+    
+    // Also capture current form values (in case they weren't saved yet)
+    const contextKeyType = document.getElementById(`contextKeyType-${sourceEnvName}`)?.value || sourceConfig.contextKeyType;
+    const secondaryContextKey = document.getElementById(`secondaryContextKey-${sourceEnvName}`)?.value || sourceConfig.secondaryContextKey;
+    const flagStatus = document.querySelector(`.flag-toggle-light[data-env="${sourceEnvName}"]`)?.value || sourceConfig.flagStatus;
+    const offVariation = document.getElementById(`offVariation-${sourceEnvName}`)?.value || sourceConfig.offVariation;
+    const defaultServe = document.getElementById(`defaultServe-${sourceEnvName}`)?.value || sourceConfig.defaultServe;
+    
+    // Capture targeting rules from DOM
+    const rulesContainer = document.querySelector(`.targeting-rules-container-light[data-env="${sourceEnvName}"]`);
+    const targetingRules = [];
+    
+    if (rulesContainer) {
+        const ruleElements = rulesContainer.querySelectorAll('.targeting-rule');
+        ruleElements.forEach(ruleEl => {
+            const ruleTitle = ruleEl.querySelector('.rule-title-input')?.value || '';
+            const serveType = ruleEl.querySelector('.rule-serve-type-select')?.value || 'variation';
+            const conditions = [];
+            
+            // Capture conditions
+            const conditionElements = ruleEl.querySelectorAll('.rule-condition');
+            conditionElements.forEach(condEl => {
+                const field = condEl.querySelector('.condition-select')?.value || '';
+                const operator = condEl.querySelector('.condition-select')?.value || '';
+                const values = condEl.querySelector('.condition-input')?.value || '';
+                if (field) {
+                    conditions.push({
+                        field: field,
+                        operator: operator,
+                        values: values.split(',').map(v => v.trim()).filter(v => v)
+                    });
+                }
+            });
+            
+            // Capture serve configuration
+            let serveConfig = {};
+            if (serveType === 'variation') {
+                const variation = ruleEl.querySelector('.rule-then-select')?.value || '';
+                serveConfig = { type: 'variation', variation: variation };
+            } else if (serveType === 'percentage') {
+                const percentageKey = ruleEl.querySelector('.percentage-key-select')?.value || '';
+                const distribution = [];
+                const distItems = ruleEl.querySelectorAll('.distribution-item');
+                distItems.forEach(item => {
+                    const varName = item.querySelector('.distribution-label')?.textContent.trim() || '';
+                    const percentage = item.querySelector('.distribution-input')?.value || '0';
+                    if (varName) {
+                        distribution.push({ variation: varName, percentage: parseInt(percentage) || 0 });
+                    }
+                });
+                serveConfig = { type: 'percentage', key: percentageKey, distribution: distribution };
+            }
+            
+            if (ruleTitle || conditions.length > 0) {
+                targetingRules.push({
+                    title: ruleTitle,
+                    conditions: conditions,
+                    serve: serveConfig
+                });
+            }
+        });
+    }
+    
+    // Check if target is a pattern
+    const targetIsPattern = targetEnvName.includes('*');
+    
+    // Deep clone the configuration
+    const clonedConfig = {
+        contextKeyType: contextKeyType || defaultEnvironmentConfig.contextKeyType,
+        secondaryContextKey: secondaryContextKey || '',
+        flagStatus: flagStatus || defaultEnvironmentConfig.flagStatus,
+        offVariation: offVariation || defaultEnvironmentConfig.offVariation,
+        defaultServe: defaultServe || defaultEnvironmentConfig.defaultServe,
+        targetingRules: targetingRules.length > 0 ? JSON.parse(JSON.stringify(targetingRules)) : (sourceConfig.targetingRules ? JSON.parse(JSON.stringify(sourceConfig.targetingRules)) : [])
+    };
+    
+    // Save to target environment
+    if (targetIsPattern) {
+        patternConfigs[targetEnvName] = clonedConfig;
+    } else {
+        environmentConfigs[targetEnvName] = clonedConfig;
+    }
+    
+    // Show success toast
+    showToast(`✓ Configuration copied from ${sourceEnvName} to ${targetEnvName}`);
+    
+    // If target environment is currently selected, rebuild its overlay
+    const activeTile = document.querySelector('.env-tile.active');
+    if (activeTile && activeTile.getAttribute('data-env') === targetEnvName) {
+        buildEnvironmentOverlayDetail(targetEnvName);
+    }
+    
+    console.log(`Configuration copied from ${sourceEnvName} to ${targetEnvName}`, clonedConfig);
+}
+
 // Update flag status in detail page
 function updateFlagStatusDetail(selectElement) {
     const status = selectElement.value;
@@ -601,7 +784,8 @@ function addConditionDetail(envName, ruleId) {
     
     const conditionHtml = `
         <div class="rule-condition" id="${conditionId}">
-            <span class="condition-if">If</span>
+            <div class="condition-if">IF</div>
+            
             <div class="condition-field">
                 <label class="condition-label">Context</label>
                 <select class="condition-select">
@@ -611,28 +795,34 @@ function addConditionDetail(envName, ruleId) {
                     <option value="email">Email</option>
                     <option value="plan">Plan</option>
                     <option value="region">Region</option>
+                    <option value="team_id">Team ID</option>
+                    <option value="country">Country</option>
+                    <option value="tier">Tier</option>
                 </select>
             </div>
+            
             <div class="condition-field">
                 <label class="condition-label">Operator</label>
                 <select class="condition-select">
-                    <option value="equals">is</option>
-                    <option value="not_equals">is not</option>
-                    <option value="in">is one of</option>
-                    <option value="not_in">is not one of</option>
+                    <option value="">Select operator...</option>
+                    <option value="equals">is one of (=)</option>
+                    <option value="not_equals">is not one of (≠)</option>
                     <option value="contains">contains</option>
                     <option value="starts_with">starts with</option>
                     <option value="ends_with">ends with</option>
+                    <option value="greater_than">greater than (>)</option>
+                    <option value="less_than">less than (<)</option>
+                    <option value="matches_regex">matches regex</option>
                 </select>
             </div>
-            <div class="condition-field" style="flex: 2;">
+            
+            <div class="condition-field">
                 <label class="condition-label">Values</label>
                 <input type="text" class="condition-input" placeholder="Enter values (comma-separated)" />
             </div>
-            <button type="button" class="btn-icon" onclick="removeConditionDetail('${envName}', '${conditionId}')" title="Remove condition">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
+            
+            <button type="button" class="btn-icon" onclick="removeConditionDetail('${envName}', '${conditionId}')" title="Remove condition" style="margin-top: 20px;">
+                ✕
             </button>
         </div>
     `;
