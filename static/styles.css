@@ -141,15 +141,17 @@ main {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.stat-value {
+.stat-card .stat-value {
     font-size: 36px;
     font-weight: 700;
     margin-bottom: 5px;
+    color: white;
 }
 
-.stat-label {
+.stat-card .stat-label {
     font-size: 14px;
     opacity: 0.9;
+    color: white;
 }
 
 .filters {
@@ -1625,14 +1627,14 @@ footer {
     gap: 4px;
 }
 
-.stat-label {
+.stat-item .stat-label {
     font-size: 11px;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.stat-value {
+.stat-item .stat-value {
     font-size: 16px;
     font-weight: 700;
     color: #1e293b;
