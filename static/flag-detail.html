@@ -347,7 +347,6 @@
                             
                             <div class="dashboard-tabs">
                                 <button class="dashboard-tab active" onclick="switchDashboard('grafana')">Grafana</button>
-                                <button class="dashboard-tab" onclick="switchDashboard('prometheus')">Prometheus</button>
                                 <button class="dashboard-tab" onclick="switchDashboard('datadog')">Datadog</button>
                             </div>
 
@@ -363,24 +362,6 @@
                                     <small>Example: https://grafana.company.com/d/flag-dashboard</small>
                                 </div>
                                 <!-- <iframe src="" frameborder="0" class="dashboard-iframe"></iframe> -->
-                            </div>
-
-                            <div class="dashboard-iframe-container" id="prometheusDashboard" style="display: none;">
-                                <div class="iframe-placeholder">
-                                    <div class="placeholder-icon">🔥</div>
-                                    <h5>Prometheus Dashboard</h5>
-                                    <p>Connect to Prometheus to query and visualize metrics</p>
-                                    <div class="iframe-config">
-                                        <input type="text" class="iframe-url-input" placeholder="Enter Prometheus URL" value="http://prometheus:9090" />
-                                        <button class="btn btn-primary" onclick="embedDashboard('prometheus')">Load Dashboard</button>
-                                    </div>
-                                    <div class="prometheus-queries">
-                                        <h6>Example Queries:</h6>
-                                        <code>rate(http_server_request_duration_sum[5m])</code>
-                                        <code>feature_flag_flagd_impression_total</code>
-                                        <code>feature_flag_flagd_result_reason{flag="enable_new_dashboard"}</code>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="dashboard-iframe-container" id="datadogDashboard" style="display: none;">
