@@ -18,7 +18,6 @@
         <nav class="nav-bar">
             <a href="index.html">Dashboard</a>
             <a href="environments.html">Environments</a>
-            <a href="debug.html">Debug/Simulate</a>
         </nav>
 
         <main>
@@ -90,6 +89,7 @@
             <div id="environmentContent" class="env-content">
                 <div class="tabs">
                     <button class="tab active" onclick="switchTab('variations')">Variations</button>
+                    <button class="tab" onclick="switchTab('debug')">Debug & Test</button>
                     <button class="tab" onclick="switchTab('rollout')">Rollout History</button>
                     <button class="tab" onclick="switchTab('metrics')">Metrics</button>
                     <button class="tab" onclick="switchTab('audit')">Audit Log</button>
@@ -118,6 +118,93 @@
 
                         <div class="form-actions">
                             <button class="btn btn-primary" onclick="saveVariations()">Save Variations</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debug & Test Tab -->
+                <div id="debugTab" class="tab-content">
+                    <div class="debug-console-container">
+                        <!-- Left Sidebar: Context List -->
+                        <div class="context-list-panel">
+                            <div class="context-list-header">
+                                <h3>Evaluation Contexts</h3>
+                                <div class="context-search">
+                                    <input type="text" class="search-input" id="contextSearchInput" placeholder="Search contexts..." oninput="filterContextList()">
+                                </div>
+                            </div>
+                            <div class="context-list" id="contextList">
+                                <!-- Context items will be loaded here -->
+                            </div>
+                            <div class="context-list-footer">
+                                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="createNewContext()">
+                                    + New Context
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Editor and Results -->
+                        <div class="context-editor-panel">
+                            <div class="editor-header">
+                                <div class="editor-title">
+                                    <span id="selectedContextTitle">Select a context or create new</span>
+                                    <span id="selectedContextEnv" class="context-env-label"></span>
+                                </div>
+                                <button class="btn btn-primary" id="runEvalButton" onclick="runContextEvaluation()" disabled>
+                                    ▶ Run Evaluation
+                                </button>
+                            </div>
+
+                            <div class="editor-content">
+                                <!-- JSON Editor -->
+                                <div class="json-editor-section">
+                                    <div class="editor-label">
+                                        <span>Context (JSON)</span>
+                                        <span class="editor-hint">Edit the JSON below</span>
+                                    </div>
+                                    <textarea class="json-editor" id="contextJsonEditor" placeholder='{
+  "organization_id": "12345",
+  "org": {
+    "plan": "enterprise",
+    "region": "US"
+  },
+  "user_id": "1001"
+}'></textarea>
+                                </div>
+
+                                <!-- Results Section -->
+                                <div class="results-section" id="resultsSection" style="display: none;">
+                                    <div class="results-header">
+                                        <h4>Evaluation Result</h4>
+                                        <span class="result-time" id="resultTimestamp"></span>
+                                    </div>
+                                    
+                                    <div class="result-cards">
+                                        <div class="result-card-compact">
+                                            <div class="result-card-label">Value</div>
+                                            <div class="result-card-value" id="resultValue">-</div>
+                                        </div>
+                                        <div class="result-card-compact">
+                                            <div class="result-card-label">Variation</div>
+                                            <div class="result-card-value" id="resultVariation">-</div>
+                                        </div>
+                                        <div class="result-card-compact">
+                                            <div class="result-card-label">Execution Time</div>
+                                            <div class="result-card-value" id="resultExecTime">-</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="result-reason-box">
+                                        <div class="result-reason-label">Evaluation Reason</div>
+                                        <div class="result-reason-text" id="resultReason">-</div>
+                                    </div>
+
+                                    <div class="result-details-box" id="resultDetailsBox" style="display: none;">
+                                        <div class="result-details-label">Matching Logic</div>
+                                        <pre class="result-details-code" id="resultDetails"></pre>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -576,6 +663,24 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
                 <button class="btn btn-danger" onclick="confirmDelete()">Delete Flag</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Previous Contexts Modal -->
+    <div id="previousContextsModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>📋 Previous Evaluation Contexts (Last 5 Days)</h3>
+                <button class="btn-close" onclick="closePreviousContextsModal()">✕</button>
+            </div>
+            <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+                <div id="previousContextsList">
+                    <!-- Contexts will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closePreviousContextsModal()">Close</button>
             </div>
         </div>
     </div>

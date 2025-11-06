@@ -431,6 +431,10 @@ function saveEnvironmentConfig(envName) {
     if (offVariation) targetConfig.offVariation = offVariation;
     if (defaultServe) targetConfig.defaultServe = defaultServe;
     
+    // Persist to localStorage for debug page access
+    localStorage.setItem('environmentConfigs', JSON.stringify(environmentConfigs));
+    localStorage.setItem('patternConfigs', JSON.stringify(patternConfigs));
+    
     console.log(`${isPattern ? 'Pattern' : 'Environment'} config saved for ${envName}:`, targetConfig);
 }
 

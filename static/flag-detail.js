@@ -1087,6 +1087,827 @@ function saveSettings() {
     showToast('✓ Flag settings updated successfully!');
 }
 
+// Debug & Test Tab Functions
+function updateDebugContextFields() {
+    const contextType = document.getElementById('debugContextType').value;
+    
+    document.getElementById('debugOrgContext').style.display = contextType === 'org' ? 'block' : 'none';
+    document.getElementById('debugUserContext').style.display = contextType === 'user' ? 'block' : 'none';
+    document.getElementById('debugCustomContext').style.display = contextType === 'custom' ? 'block' : 'none';
+}
+
+function runFlagEvaluation() {
+    if (!currentFlag) {
+        alert('No flag loaded');
+        return;
+    }
+
+    const contextType = document.getElementById('debugContextType').value;
+    let context = {};
+    
+    // Build context based on type
+    if (contextType === 'org') {
+        const orgId = document.getElementById('debugOrgId').value;
+        if (!orgId) {
+            alert('Please enter an Organization ID');
+            return;
+        }
+        
+        context = {
+            organization_id: orgId,
+            org: {
+                id: orgId,
+                plan: document.getElementById('debugOrgPlan').value || 'free',
+                region: document.getElementById('debugOrgRegion').value || 'US'
+            }
+        };
+    } else if (contextType === 'user') {
+        const userId = document.getElementById('debugUserId').value;
+        if (!userId) {
+            alert('Please enter a User ID');
+            return;
+        }
+        
+        context = {
+            user_id: userId,
+            user: {
+                id: userId,
+                email: document.getElementById('debugUserEmail').value,
+                role: document.getElementById('debugUserRole').value || 'member'
+            }
+        };
+    } else {
+        const customJson = document.getElementById('debugCustomJson').value;
+        if (!customJson) {
+            alert('Please enter context JSON');
+            return;
+        }
+        
+        try {
+            context = JSON.parse(customJson);
+        } catch (e) {
+            alert('Invalid JSON: ' + e.message);
+            return;
+        }
+    }
+    
+    // Run evaluation using the engine from debug.js
+    const startTime = performance.now();
+    const result = evaluateSingleFlag(currentEnvironment, context, currentFlag);
+    const endTime = performance.now();
+    const evalTime = Math.round(endTime - startTime);
+    
+    // Save to flag-specific history
+    const evaluation = {
+        id: 'eval_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        flagName: currentFlag.name,
+        environment: currentEnvironment,
+        context: context,
+        result: result,
+        evaluationTime: evalTime
+    };
+    saveFlagEvaluationHistory(evaluation);
+    
+    // Display result
+    displayEvaluationResult(result, evalTime);
+    
+    // Refresh history display
+    loadFlagEvaluationHistory();
+}
+
+// Evaluate a single flag (similar to evaluateFlags from debug.js)
+function evaluateSingleFlag(env, context, flag) {
+    // Load environment configs
+    const envConfigs = JSON.parse(localStorage.getItem('environmentConfigs') || '{}');
+    
+    const envConfig = envConfigs[env] || {
+        flagStatus: 'on',
+        offVariation: 'var-b',
+        targetingRules: [],
+        defaultServe: 'var-a',
+        contextKeyType: 'organization_id'
+    };
+    
+    let value = flag.defaultVariation;
+    let reason = 'Default variation';
+    let ruleMatch = null;
+    let variation = 'default';
+    
+    // Check if flag is OFF
+    if (envConfig.flagStatus === 'off') {
+        value = envConfig.offVariation || flag.defaultVariation;
+        reason = 'Flag is OFF - serving off variation';
+        variation = envConfig.offVariation || 'default';
+    } else {
+        // Flag is ON - evaluate targeting rules
+        let matchedRule = null;
+        
+        if (envConfig.targetingRules && envConfig.targetingRules.length > 0) {
+            for (let i = 0; i < envConfig.targetingRules.length; i++) {
+                const rule = envConfig.targetingRules[i];
+                
+                if (evaluateRuleForFlag(rule, context)) {
+                    matchedRule = rule;
+                    
+                    // Determine serve value based on rule type
+                    if (rule.serve?.type === 'variation') {
+                        variation = rule.serve.variation;
+                        value = rule.serve.variation;
+                        reason = `Matched Rule: ${rule.title || 'Rule ' + (i + 1)}`;
+                        ruleMatch = JSON.stringify(rule.conditions, null, 2);
+                    } else if (rule.serve?.type === 'percentage') {
+                        // Percentage rollout
+                        const key = context[rule.serve.key] || context.organization_id || context.user_id;
+                        
+                        if (key) {
+                            const distribution = rule.serve.distribution || [];
+                            const hash = hashStringForFlag(String(key)) % 100;
+                            
+                            let cumulativePercentage = 0;
+                            for (const dist of distribution) {
+                                cumulativePercentage += dist.percentage;
+                                if (hash < cumulativePercentage) {
+                                    variation = dist.variation;
+                                    value = dist.variation;
+                                    reason = `Matched Rule: ${rule.title || 'Rule ' + (i + 1)} - Percentage rollout (${dist.percentage}%)`;
+                                    ruleMatch = `Percentage rollout on ${rule.serve.key}: bucket ${hash} → ${dist.variation}`;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // No rule matched - use default serve
+        if (!matchedRule) {
+            variation = envConfig.defaultServe || flag.defaultVariation;
+            value = envConfig.defaultServe || flag.defaultVariation;
+            reason = 'No rules matched - serving default';
+        }
+    }
+    
+    // Convert value to appropriate type
+    let typedValue = value;
+    try {
+        if (flag.type === 'boolean') {
+            typedValue = value === 'true' || value === true;
+        } else if (flag.type === 'number') {
+            typedValue = Number(value);
+        } else if (flag.type === 'object') {
+            typedValue = typeof value === 'string' ? JSON.parse(value) : value;
+        }
+    } catch (e) {
+        // Keep original value if conversion fails
+    }
+    
+    return {
+        name: flag.name,
+        type: flag.type,
+        value: typedValue,
+        variation: variation,
+        reason: reason,
+        ruleMatch: ruleMatch,
+        default: flag.defaultVariation
+    };
+}
+
+// Hash function for consistent bucketing
+function hashStringForFlag(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+}
+
+// Evaluate rule
+function evaluateRuleForFlag(rule, context) {
+    if (!rule.conditions || rule.conditions.length === 0) {
+        return false;
+    }
+    
+    return rule.conditions.every(condition => evaluateConditionForFlag(condition, context));
+}
+
+// Evaluate condition
+function evaluateConditionForFlag(condition, context) {
+    const { field, operator, values } = condition;
+    
+    // Get field value from context (supports nested paths like "org.plan")
+    const fieldValue = field.split('.').reduce((obj, key) => obj?.[key], context);
+    
+    if (fieldValue === undefined) return false;
+    
+    switch (operator) {
+        case 'equals':
+            return values.includes(String(fieldValue));
+        case 'not_equals':
+            return !values.includes(String(fieldValue));
+        case 'contains':
+            return values.some(v => String(fieldValue).includes(v));
+        case 'starts_with':
+            return values.some(v => String(fieldValue).startsWith(v));
+        case 'ends_with':
+            return values.some(v => String(fieldValue).endsWith(v));
+        case 'greater_than':
+            return Number(fieldValue) > Number(values[0]);
+        case 'less_than':
+            return Number(fieldValue) < Number(values[0]);
+        case 'matches_regex':
+            try {
+                const regex = new RegExp(values[0]);
+                return regex.test(String(fieldValue));
+            } catch (e) {
+                return false;
+            }
+        default:
+            return false;
+    }
+}
+
+// Display evaluation result
+function displayEvaluationResult(result, evalTime) {
+    const resultBox = document.getElementById('evaluationResult');
+    resultBox.style.display = 'block';
+    
+    document.getElementById('evalResultValue').textContent = formatValue(result.value);
+    document.getElementById('evalResultVariation').textContent = result.variation;
+    document.getElementById('evalResultReason').textContent = result.reason;
+    document.getElementById('evalResultTime').textContent = evalTime + 'ms';
+    
+    // Show rule match details if available
+    const detailsDiv = document.getElementById('evalResultDetails');
+    if (result.ruleMatch) {
+        detailsDiv.innerHTML = `
+            <h5 style="margin-top: 15px; font-size: 14px;">Matching Logic:</h5>
+            <pre style="background: #f8f9fa; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${escapeHtmlForFlag(result.ruleMatch)}</pre>
+        `;
+    } else {
+        detailsDiv.innerHTML = '';
+    }
+    
+    // Scroll to result
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function escapeHtmlForFlag(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatValue(value) {
+    if (typeof value === 'object') {
+        return JSON.stringify(value);
+    }
+    return String(value);
+}
+
+// Save evaluation to flag-specific history
+function saveFlagEvaluationHistory(evaluation) {
+    const historyKey = 'flagEvaluationHistory_' + evaluation.flagName;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    history.unshift(evaluation); // Add to beginning
+    
+    // Keep only last 50 evaluations per flag
+    if (history.length > 50) {
+        history.splice(50);
+    }
+    
+    localStorage.setItem(historyKey, JSON.stringify(history));
+}
+
+// Load and display flag evaluation history
+function loadFlagEvaluationHistory() {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    // Filter to last 5 days
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const recentHistory = history.filter(eval => new Date(eval.timestamp) >= fiveDaysAgo);
+    
+    const historyContainer = document.getElementById('flagEvaluationHistory');
+    
+    if (recentHistory.length === 0) {
+        historyContainer.innerHTML = '<p style="color: #a0aec0; text-align: center; padding: 40px 20px;">No evaluation history in the last 5 days. Run an evaluation to see it here.</p>';
+        return;
+    }
+    
+    // Show only top 6 most recent
+    const displayHistory = recentHistory.slice(0, 6);
+    
+    historyContainer.innerHTML = displayHistory.map(eval => `
+        <div class="history-item-flag" onclick="replayFlagEvaluation('${eval.id}')">
+            <div class="history-item-header">
+                <span class="history-time">${formatTimeAgo(eval.timestamp)}</span>
+                <span class="history-env-badge">${eval.environment}</span>
+            </div>
+            <div class="history-item-body">
+                <div class="history-context">
+                    ${formatContextSummary(eval.context)}
+                </div>
+                <div class="history-result-summary">
+                    <span class="history-value">Value: ${formatValue(eval.result.value)}</span>
+                    <span class="history-variation">Variation: ${eval.result.variation}</span>
+                    <span class="history-reason">${eval.result.reason}</span>
+                </div>
+                <div class="history-meta">
+                    <span>⏱️ ${eval.evaluationTime}ms</span>
+                    <span>•</span>
+                    <span>${new Date(eval.timestamp).toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Add "View All" button if there are more
+    if (recentHistory.length > 6) {
+        historyContainer.innerHTML += `
+            <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 10px;" onclick="showPreviousContextsModal()">
+                View All ${recentHistory.length} Evaluations
+            </button>
+        `;
+    }
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now - then;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return then.toLocaleDateString();
+}
+
+function formatContextSummary(context) {
+    if (context.org) {
+        return `<strong>Org:</strong> ${context.org.id} (${context.org.plan || 'free'})`;
+    } else if (context.user) {
+        return `<strong>User:</strong> ${context.user.id} (${context.user.role || 'member'})`;
+    } else if (context.organization_id) {
+        return `<strong>Org ID:</strong> ${context.organization_id}`;
+    } else if (context.user_id) {
+        return `<strong>User ID:</strong> ${context.user_id}`;
+    }
+    return '<strong>Custom context</strong>';
+}
+
+// Show previous contexts modal
+function showPreviousContextsModal() {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    // Filter to last 5 days
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const recentHistory = history.filter(eval => new Date(eval.timestamp) >= fiveDaysAgo);
+    
+    const modal = document.getElementById('previousContextsModal');
+    const listContainer = document.getElementById('previousContextsList');
+    
+    if (recentHistory.length === 0) {
+        listContainer.innerHTML = '<p style="color: #a0aec0; text-align: center; padding: 40px 20px;">No evaluation history in the last 5 days.</p>';
+    } else {
+        listContainer.innerHTML = recentHistory.map(eval => `
+            <div class="previous-context-card" onclick="loadAndEditContext('${eval.id}')">
+                <div class="context-card-header">
+                    <div class="context-card-title">
+                        <span class="history-time">${new Date(eval.timestamp).toLocaleString()}</span>
+                        <span class="history-env-badge">${eval.environment}</span>
+                    </div>
+                    <span class="context-time-ago">${formatTimeAgo(eval.timestamp)}</span>
+                </div>
+                <div class="context-card-body">
+                    <div class="context-summary">
+                        <strong>Context:</strong> ${formatContextSummary(eval.context)}
+                    </div>
+                    <div class="context-details">
+                        <pre style="font-size: 11px; background: #f8f9fa; padding: 8px; border-radius: 4px; margin: 8px 0; max-height: 100px; overflow-y: auto;">${JSON.stringify(eval.context, null, 2)}</pre>
+                    </div>
+                    <div class="context-result">
+                        <div class="result-row-compact">
+                            <span class="result-label-compact">Result:</span>
+                            <span class="result-value-compact" style="color: #667eea; font-weight: 600;">${formatValue(eval.result.value)}</span>
+                        </div>
+                        <div class="result-row-compact">
+                            <span class="result-label-compact">Variation:</span>
+                            <span class="result-value-compact">${eval.result.variation}</span>
+                        </div>
+                        <div class="result-row-compact">
+                            <span class="result-label-compact">Reason:</span>
+                            <span class="result-value-compact">${eval.result.reason}</span>
+                        </div>
+                        <div class="result-row-compact">
+                            <span class="result-label-compact">Execution Time:</span>
+                            <span class="result-value-compact">${eval.evaluationTime}ms</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="context-card-footer">
+                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); loadAndEditContext('${eval.id}')">
+                        📝 Load & Edit
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); loadAndRunContext('${eval.id}')">
+                        ▶️ Run As-Is
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closePreviousContextsModal() {
+    document.getElementById('previousContextsModal').style.display = 'none';
+}
+
+// Load context and allow editing
+function loadAndEditContext(evalId) {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    const evaluation = history.find(e => e.id === evalId);
+    
+    if (!evaluation) {
+        alert('Evaluation not found');
+        return;
+    }
+    
+    // Close modal
+    closePreviousContextsModal();
+    
+    // Switch to Debug tab
+    const debugTab = document.querySelector('.tab[onclick*="debug"]');
+    if (debugTab) debugTab.click();
+    
+    // Populate the form with the context for editing
+    populateDebugForm(evaluation.context);
+    
+    // Show previous result for comparison
+    displayEvaluationResult(evaluation.result, evaluation.evaluationTime);
+    
+    // Scroll to form
+    document.getElementById('debugTab').scrollIntoView({ behavior: 'smooth' });
+    
+    showToast('✓ Context loaded! Edit as needed and click "Run Evaluation"');
+}
+
+// Load context and run immediately
+function loadAndRunContext(evalId) {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    const evaluation = history.find(e => e.id === evalId);
+    
+    if (!evaluation) {
+        alert('Evaluation not found');
+        return;
+    }
+    
+    // Close modal
+    closePreviousContextsModal();
+    
+    // Switch to Debug tab
+    const debugTab = document.querySelector('.tab[onclick*="debug"]');
+    if (debugTab) debugTab.click();
+    
+    // Populate the form
+    populateDebugForm(evaluation.context);
+    
+    // Run evaluation automatically
+    setTimeout(() => {
+        runFlagEvaluation();
+    }, 300);
+}
+
+// Replay a previous evaluation
+function replayFlagEvaluation(evalId) {
+    loadAndEditContext(evalId);
+}
+
+// Populate debug form from context
+function populateDebugForm(context) {
+    if (context.org) {
+        document.getElementById('debugContextType').value = 'org';
+        updateDebugContextFields();
+        document.getElementById('debugOrgId').value = context.org.id;
+        document.getElementById('debugOrgPlan').value = context.org.plan || '';
+        document.getElementById('debugOrgRegion').value = context.org.region || '';
+    } else if (context.user) {
+        document.getElementById('debugContextType').value = 'user';
+        updateDebugContextFields();
+        document.getElementById('debugUserId').value = context.user.id;
+        document.getElementById('debugUserEmail').value = context.user.email || '';
+        document.getElementById('debugUserRole').value = context.user.role || '';
+    } else {
+        document.getElementById('debugContextType').value = 'custom';
+        updateDebugContextFields();
+        document.getElementById('debugCustomJson').value = JSON.stringify(context, null, 2);
+    }
+}
+
+// Clear flag history
+function clearFlagHistory() {
+    if (!currentFlag) return;
+    
+    if (confirm('Are you sure you want to clear all evaluation history for this flag?')) {
+        const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+        localStorage.removeItem(historyKey);
+        loadFlagEvaluationHistory();
+        showToast('✓ Evaluation history cleared');
+    }
+}
+
+// Global variable for selected context
+let selectedContextId = null;
+
+// Generate sample evaluation data
+function generateSampleEvaluationData() {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const existing = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    // Only generate if no history exists
+    if (existing.length > 0) return;
+    
+    const sampleContexts = [
+        {
+            context: {
+                organization_id: "12345",
+                org: { id: "12345", plan: "enterprise", region: "US" }
+            },
+            env: "prod"
+        },
+        {
+            context: {
+                organization_id: "67890",
+                org: { id: "67890", plan: "professional", region: "EU" }
+            },
+            env: "prod"
+        },
+        {
+            context: {
+                user_id: "user_001",
+                user: { id: "user_001", email: "john@example.com", role: "admin" }
+            },
+            env: "stage"
+        },
+        {
+            context: {
+                organization_id: "11111",
+                org: { id: "11111", plan: "free", region: "APAC" }
+            },
+            env: "prod"
+        },
+        {
+            context: {
+                organization_id: "22222",
+                org: { id: "22222", plan: "starter", region: "US" }
+            },
+            env: "stage"
+        }
+    ];
+    
+    const history = [];
+    const now = Date.now();
+    
+    sampleContexts.forEach((sample, index) => {
+        // Create evaluations at different times over last 3 days
+        const timestamp = new Date(now - (index * 12 * 60 * 60 * 1000)); // 12 hours apart
+        
+        const result = evaluateSingleFlag(sample.env, sample.context, currentFlag);
+        
+        history.push({
+            id: 'eval_' + timestamp.getTime(),
+            timestamp: timestamp.toISOString(),
+            flagName: currentFlag.name,
+            environment: sample.env,
+            context: sample.context,
+            result: result,
+            evaluationTime: Math.floor(Math.random() * 10) + 3
+        });
+    });
+    
+    localStorage.setItem(historyKey, JSON.stringify(history));
+}
+
+// Load context list
+function loadContextList() {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    // Filter to last 5 days
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    const recentHistory = history.filter(eval => new Date(eval.timestamp) >= fiveDaysAgo);
+    
+    const listContainer = document.getElementById('contextList');
+    
+    if (recentHistory.length === 0) {
+        listContainer.innerHTML = '<div class="empty-state">No contexts yet. Click "+ New Context" to create one.</div>';
+        return;
+    }
+    
+    listContainer.innerHTML = recentHistory.map(eval => {
+        const contextSummary = formatContextSummary(eval.context);
+        const isSelected = selectedContextId === eval.id;
+        
+        return `
+            <div class="context-item ${isSelected ? 'selected' : ''}" onclick="selectContext('${eval.id}')" data-context-id="${eval.id}">
+                <div class="context-item-header">
+                    <span class="context-item-time">${formatTimeAgo(eval.timestamp)}</span>
+                    <span class="context-item-env">${eval.environment}</span>
+                </div>
+                <div class="context-item-summary">${contextSummary}</div>
+                <div class="context-item-result">
+                    <span class="result-badge result-badge-${eval.result.variation}">${eval.result.value}</span>
+                    <span class="context-item-exec-time">${eval.evaluationTime}ms</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Filter context list
+function filterContextList() {
+    const searchTerm = document.getElementById('contextSearchInput').value.toLowerCase();
+    const items = document.querySelectorAll('.context-item');
+    
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Select a context from the list
+function selectContext(contextId) {
+    if (!currentFlag) return;
+    
+    const historyKey = 'flagEvaluationHistory_' + currentFlag.name;
+    const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    const evaluation = history.find(e => e.id === contextId);
+    
+    if (!evaluation) return;
+    
+    selectedContextId = contextId;
+    
+    // Update UI
+    document.querySelectorAll('.context-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    document.querySelector(`[data-context-id="${contextId}"]`)?.classList.add('selected');
+    
+    // Load context into editor
+    document.getElementById('contextJsonEditor').value = JSON.stringify(evaluation.context, null, 2);
+    document.getElementById('selectedContextTitle').textContent = formatContextSummary(evaluation.context);
+    document.getElementById('selectedContextEnv').textContent = evaluation.environment;
+    document.getElementById('selectedContextEnv').style.display = 'inline-block';
+    document.getElementById('runEvalButton').disabled = false;
+    
+    // Clear previous results
+    document.getElementById('resultsSection').style.display = 'none';
+}
+
+// Create new context
+function createNewContext() {
+    selectedContextId = null;
+    
+    // Clear selection
+    document.querySelectorAll('.context-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    
+    // Set default context
+    const defaultContext = {
+        organization_id: "12345",
+        org: {
+            plan: "enterprise",
+            region: "US"
+        }
+    };
+    
+    document.getElementById('contextJsonEditor').value = JSON.stringify(defaultContext, null, 2);
+    document.getElementById('selectedContextTitle').textContent = 'New Context';
+    document.getElementById('selectedContextEnv').textContent = currentEnvironment;
+    document.getElementById('selectedContextEnv').style.display = 'inline-block';
+    document.getElementById('runEvalButton').disabled = false;
+    
+    // Clear results
+    document.getElementById('resultsSection').style.display = 'none';
+}
+
+// Run evaluation from JSON editor
+function runContextEvaluation() {
+    if (!currentFlag) return;
+    
+    const jsonEditor = document.getElementById('contextJsonEditor');
+    let context;
+    
+    try {
+        context = JSON.parse(jsonEditor.value);
+    } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+        return;
+    }
+    
+    // Run evaluation
+    const startTime = performance.now();
+    const result = evaluateSingleFlag(currentEnvironment, context, currentFlag);
+    const endTime = performance.now();
+    const evalTime = Math.round(endTime - startTime);
+    
+    // Save to history
+    const evaluation = {
+        id: 'eval_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        flagName: currentFlag.name,
+        environment: currentEnvironment,
+        context: context,
+        result: result,
+        evaluationTime: evalTime
+    };
+    saveFlagEvaluationHistory(evaluation);
+    
+    // Display result
+    displayContextEvaluationResult(result, evalTime);
+    
+    // Reload context list
+    loadContextList();
+    
+    // Select the new context
+    selectedContextId = evaluation.id;
+    setTimeout(() => {
+        const newItem = document.querySelector(`[data-context-id="${evaluation.id}"]`);
+        if (newItem) {
+            newItem.classList.add('selected');
+            newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 100);
+}
+
+// Display evaluation result
+function displayContextEvaluationResult(result, evalTime) {
+    const resultsSection = document.getElementById('resultsSection');
+    resultsSection.style.display = 'block';
+    
+    document.getElementById('resultValue').textContent = formatValue(result.value);
+    document.getElementById('resultVariation').textContent = result.variation;
+    document.getElementById('resultExecTime').textContent = evalTime + 'ms';
+    document.getElementById('resultReason').textContent = result.reason;
+    document.getElementById('resultTimestamp').textContent = new Date().toLocaleTimeString();
+    
+    // Show matching logic if available
+    const detailsBox = document.getElementById('resultDetailsBox');
+    if (result.ruleMatch) {
+        document.getElementById('resultDetails').textContent = result.ruleMatch;
+        detailsBox.style.display = 'block';
+    } else {
+        detailsBox.style.display = 'none';
+    }
+    
+    // Scroll to results
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Load history when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for current flag to load
+    setTimeout(() => {
+        if (currentFlag) {
+            generateSampleEvaluationData();
+            loadContextList();
+        }
+    }, 500);
+});
+
 // Add CSS for toast animations
 const style = document.createElement('style');
 style.textContent = `
