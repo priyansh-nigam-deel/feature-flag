@@ -16,13 +16,156 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initDashboard() {
     allFlags = JSON.parse(localStorage.getItem('featureFlags') || '[]');
+    
+    // Add sample flags if localStorage is empty
+    if (allFlags.length === 0) {
+        allFlags = generateSampleFlags();
+        localStorage.setItem('featureFlags', JSON.stringify(allFlags));
+    }
+    
     filteredFlags = [...allFlags];
     
     // Build autocomplete data from all flags
     buildAutocompleteData();
     
+    // Initialize filters panel max-height
+    const filtersPanel = document.getElementById('filtersPanel');
+    if (filtersPanel) {
+        filtersPanel.style.maxHeight = filtersPanel.scrollHeight + 'px';
+    }
+    
     updateStats(allFlags);
     applyFilters();
+}
+
+function generateSampleFlags() {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+    const urgentDate = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000); // 5 days from now
+    
+    return [
+        {
+            name: 'enable_new_dashboard',
+            description: 'Enable new analytics dashboard for users',
+            type: 'Boolean',
+            status: 'active',
+            environment: 'prod',
+            owner: 'Sarah Johnson',
+            team: 'Product Team',
+            createdAt: '2025-11-01',
+            expiryDate: futureDate.toISOString().split('T')[0],
+            variations: [
+                { name: 'var-a', value: true, rollout: 75 },
+                { name: 'var-b', value: false, rollout: 25 }
+            ],
+            rules: [{ field: 'org.plan', operator: 'equals', value: 'enterprise' }]
+        },
+        {
+            name: 'payment_v2_enabled',
+            description: 'Enable v2 payment processing system',
+            type: 'Boolean',
+            status: 'active',
+            environment: 'stage',
+            owner: 'Mike Chen',
+            team: 'Payments Team',
+            createdAt: '2025-10-15',
+            expiryDate: urgentDate.toISOString().split('T')[0],
+            variations: [
+                { name: 'var-a', value: true, rollout: 50 },
+                { name: 'var-b', value: false, rollout: 50 }
+            ],
+            rules: [{ field: 'org.region', operator: 'equals', value: 'US' }]
+        },
+        {
+            name: 'theme_variant',
+            description: 'UI theme selection for A/B testing',
+            type: 'String',
+            status: 'inactive',
+            environment: 'dev',
+            owner: 'Emma Davis',
+            team: 'Design Team',
+            createdAt: '2025-10-28',
+            expiryDate: futureDate.toISOString().split('T')[0],
+            variations: [
+                { name: 'var-a', value: 'dark', rollout: 50 },
+                { name: 'var-b', value: 'light', rollout: 50 }
+            ]
+        },
+        {
+            name: 'max_upload_size',
+            description: 'Maximum file upload size in MB',
+            type: 'Number',
+            status: 'active',
+            environment: 'prod',
+            owner: 'David Wilson',
+            team: 'Infrastructure Team',
+            createdAt: '2025-10-05',
+            expiryDate: '2026-01-10',
+            variations: [
+                { name: 'var-a', value: 100, rollout: 100 }
+            ]
+        },
+        {
+            name: 'feature_config',
+            description: 'Complex feature configuration object',
+            type: 'Object',
+            status: 'inactive',
+            environment: 'demo',
+            owner: 'Lisa Brown',
+            team: 'Demo Team',
+            createdAt: '2025-10-20',
+            expiryDate: futureDate.toISOString().split('T')[0]
+        },
+        {
+            name: 'enable_notifications',
+            description: 'Enable push notifications feature',
+            type: 'Boolean',
+            status: 'active',
+            environment: 'prod',
+            owner: 'Tom Anderson',
+            team: 'Product Team',
+            createdAt: '2025-10-12',
+            expiryDate: urgentDate.toISOString().split('T')[0],
+            variations: [
+                { name: 'var-a', value: true, rollout: 100 }
+            ],
+            rules: [{ field: 'user.role', operator: 'equals', value: 'admin' }]
+        },
+        {
+            name: 'ab_test_checkout_flow',
+            description: 'A/B test for new checkout experience',
+            type: 'String',
+            status: 'active',
+            environment: 'prod',
+            owner: 'Sarah Johnson',
+            team: 'Product Team',
+            createdAt: '2025-10-25',
+            expiryDate: futureDate.toISOString().split('T')[0],
+            variations: [
+                { name: 'var-a', value: 'new-flow', rollout: 30 },
+                { name: 'var-b', value: 'old-flow', rollout: 70 }
+            ],
+            rules: [
+                { field: 'org.plan', operator: 'in', value: ['professional', 'enterprise'] },
+                { field: 'org.region', operator: 'equals', value: 'US' }
+            ]
+        },
+        {
+            name: 'api_rate_limit',
+            description: 'Dynamic API rate limiting per plan',
+            type: 'Number',
+            status: 'active',
+            environment: 'prod',
+            owner: 'David Wilson',
+            team: 'Infrastructure Team',
+            createdAt: '2025-10-08',
+            expiryDate: '2026-02-15',
+            variations: [
+                { name: 'var-a', value: 1000, rollout: 100 }
+            ],
+            rules: [{ field: 'org.plan', operator: 'equals', value: 'free' }]
+        }
+    ];
 }
 
 // Build autocomplete data from all flags
@@ -42,19 +185,92 @@ function updateStats(flags) {
     const totalFlags = flags.length;
     const activeFlags = flags.filter(f => f.status === 'active').length;
     const inactiveFlags = flags.filter(f => f.status === 'inactive').length;
+    
+    // Expiring flags (within 30 days)
     const expiringFlags = flags.filter(f => {
         if (!f.expiryDate) return false;
         const daysUntilExpiry = Math.ceil((new Date(f.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
         return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
     }).length;
     
-    const statValues = document.querySelectorAll('.stat-value');
-    if (statValues.length >= 4) {
-        statValues[0].textContent = totalFlags;
-        statValues[1].textContent = activeFlags;
-        statValues[2].textContent = inactiveFlags;
-        statValues[3].textContent = expiringFlags;
+    // Calculate average rollout percentage for active flags
+    const activeFlagsWithRollout = flags.filter(f => f.status === 'active');
+    let avgRollout = 0;
+    if (activeFlagsWithRollout.length > 0) {
+        const totalRollout = activeFlagsWithRollout.reduce((sum, flag) => {
+            // Get rollout from variations or default to 100
+            if (flag.variations && Array.isArray(flag.variations)) {
+                const rollout = flag.variations.reduce((sum, v) => sum + (v.rollout || 0), 0);
+                return sum + rollout;
+            }
+            return sum + 100; // Default full rollout if no variations
+        }, 0);
+        avgRollout = Math.round(totalRollout / activeFlagsWithRollout.length);
     }
+    
+    // Flags with targeting rules
+    const targetedFlags = flags.filter(f => {
+        return (f.targetingRules && f.targetingRules.length > 0) || 
+               (f.rules && f.rules.length > 0);
+    }).length;
+    
+    // Calculate total evaluations (mock data based on active flags)
+    const totalEvaluations = flags.reduce((sum, flag) => {
+        if (flag.status === 'active') {
+            // Generate realistic evaluation counts
+            return sum + Math.floor(Math.random() * 10000) + 1000;
+        }
+        return sum;
+    }, 0);
+    
+    // Update Total Flags
+    document.getElementById('statTotalFlags').textContent = totalFlags;
+    document.getElementById('statTotalSubtext').textContent = 
+        totalFlags === allFlags.length ? 'Across all environments' : `Filtered from ${allFlags.length}`;
+    
+    // Update Active Flags
+    document.getElementById('statActiveFlags').textContent = activeFlags;
+    const activePercentage = totalFlags > 0 ? Math.round((activeFlags / totalFlags) * 100) : 0;
+    document.getElementById('statActiveSubtext').textContent = `${activePercentage}% of total`;
+    
+    // Update Expiring Flags
+    document.getElementById('statExpiringFlags').textContent = expiringFlags;
+    if (expiringFlags > 0) {
+        const urgentFlags = flags.filter(f => {
+            if (!f.expiryDate) return false;
+            const daysUntilExpiry = Math.ceil((new Date(f.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+            return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+        }).length;
+        document.getElementById('statExpiringSubtext').textContent = 
+            urgentFlags > 0 ? `${urgentFlags} within 7 days!` : 'Within 30 days';
+    } else {
+        document.getElementById('statExpiringSubtext').textContent = 'None expiring';
+    }
+    
+    // Update Average Rollout
+    document.getElementById('statAvgRollout').textContent = avgRollout + '%';
+    document.getElementById('statRolloutSubtext').textContent = 
+        activeFlagsWithRollout.length > 0 ? `${activeFlagsWithRollout.length} active flags` : 'No active flags';
+    
+    // Update Targeted Flags
+    document.getElementById('statTargeted').textContent = targetedFlags;
+    const targetedPercentage = totalFlags > 0 ? Math.round((targetedFlags / totalFlags) * 100) : 0;
+    document.getElementById('statTargetedSubtext').textContent = `${targetedPercentage}% using rules`;
+    
+    // Update Evaluations
+    document.getElementById('statEvaluations').textContent = formatNumber(totalEvaluations);
+    const avgPerFlag = activeFlags > 0 ? Math.round(totalEvaluations / activeFlags) : 0;
+    document.getElementById('statEvalsSubtext').textContent = `~${formatNumber(avgPerFlag)} per flag`;
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
 }
 
 // Advanced filtering and search with targeting context support
@@ -109,6 +325,12 @@ function applyFilters() {
     // Update display
     renderFlagsTable(filteredFlags);
     updateFilterResults();
+    
+    // Update stats with filtered flags
+    updateStats(filteredFlags);
+    
+    // Update active filters count
+    updateActiveFiltersCount();
 }
 
 function sortFlags(sortBy) {
@@ -186,6 +408,23 @@ function updateFilterResults() {
     }
 }
 
+function toggleFiltersPanel() {
+    const filtersPanel = document.getElementById('filtersPanel');
+    const icon = document.getElementById('filtersPanelIcon');
+    
+    if (filtersPanel.classList.contains('collapsed')) {
+        filtersPanel.classList.remove('collapsed');
+        filtersPanel.style.maxHeight = filtersPanel.scrollHeight + 'px';
+        icon.classList.remove('collapsed');
+        icon.textContent = '▼';
+    } else {
+        filtersPanel.classList.add('collapsed');
+        filtersPanel.style.maxHeight = '0';
+        icon.classList.add('collapsed');
+        icon.textContent = '▶';
+    }
+}
+
 function toggleAdvancedFilters() {
     const advancedFilters = document.getElementById('advancedFilters');
     const icon = document.getElementById('filterToggleIcon');
@@ -196,6 +435,36 @@ function toggleAdvancedFilters() {
     } else {
         advancedFilters.style.display = 'none';
         icon.textContent = '⚙️';
+    }
+}
+
+function updateActiveFiltersCount() {
+    let count = 0;
+    
+    const searchInput = document.getElementById('searchInput')?.value;
+    if (searchInput) count++;
+    
+    const filterTeam = document.getElementById('filterTeam')?.value;
+    if (filterTeam) count++;
+    
+    const filterOwner = document.getElementById('filterOwner')?.value;
+    if (filterOwner) count++;
+    
+    const filterEnvironment = document.getElementById('filterEnvironment')?.value || 
+                              document.getElementById('quickFilterEnvironment')?.value;
+    if (filterEnvironment) count++;
+    
+    const filterType = document.getElementById('filterType')?.value || 
+                       document.getElementById('quickFilterType')?.value;
+    if (filterType) count++;
+    
+    const filterStatus = document.getElementById('filterStatus')?.value || 
+                         document.getElementById('quickFilterStatus')?.value;
+    if (filterStatus) count++;
+    
+    const countElement = document.getElementById('activeFiltersCount');
+    if (countElement) {
+        countElement.textContent = count > 0 ? `${count} active` : '';
     }
 }
 
@@ -244,6 +513,9 @@ function clearFilters() {
 
     // Reapply filters (will show all)
     applyFilters();
+    
+    // Update filter count
+    updateActiveFiltersCount();
 }
 
 function renderFlagsTable(flags) {

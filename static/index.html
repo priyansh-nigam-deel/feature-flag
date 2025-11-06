@@ -27,31 +27,76 @@
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">24</div>
-                    <div class="stat-label">Total Flags</div>
+                <div class="stat-card stat-card-primary">
+                    <div class="stat-icon">🚩</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statTotalFlags">0</div>
+                        <div class="stat-label">Total Flags</div>
+                        <div class="stat-subtext" id="statTotalSubtext">Across all environments</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value">12</div>
-                    <div class="stat-label">Active Flags</div>
+                <div class="stat-card stat-card-success">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statActiveFlags">0</div>
+                        <div class="stat-label">Active Flags</div>
+                        <div class="stat-subtext" id="statActiveSubtext">Currently serving traffic</div>
+                    </div>
+                    <div class="stat-trend positive" id="statActiveTrend"></div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value">8</div>
-                    <div class="stat-label">Inactive Flags</div>
+                <div class="stat-card stat-card-warning">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statExpiringFlags">0</div>
+                        <div class="stat-label">Expiring Soon</div>
+                        <div class="stat-subtext" id="statExpiringSubtext">Within 30 days</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value">4</div>
-                    <div class="stat-label">Expiring Soon</div>
+                <div class="stat-card stat-card-info">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statAvgRollout">0%</div>
+                        <div class="stat-label">Avg Rollout</div>
+                        <div class="stat-subtext" id="statRolloutSubtext">Active flags</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-secondary">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statTargeted">0</div>
+                        <div class="stat-label">With Targeting</div>
+                        <div class="stat-subtext" id="statTargetedSubtext">Using rules</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-neutral">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="statEvaluations">0</div>
+                        <div class="stat-label">Evaluations (24h)</div>
+                        <div class="stat-subtext" id="statEvalsSubtext">Total requests</div>
+                    </div>
                 </div>
             </div>
 
             <div class="filters-container">
-                <div class="search-section">
-                    <input type="text" id="searchInput" placeholder="🔍 Search flags by name, description, or targeting context..." class="search-input" oninput="applyFilters()">
-                    <button class="btn-toggle-filters" onclick="toggleAdvancedFilters()">
-                        <span id="filterToggleIcon">⚙️</span> Advanced Filters
-                    </button>
+                <div class="filters-header" onclick="toggleFiltersPanel()">
+                    <div class="filters-title">
+                        <span id="filtersPanelIcon">▼</span>
+                        <h3>Filters & Search</h3>
+                    </div>
+                    <div class="filters-actions">
+                        <span class="filter-count" id="activeFiltersCount"></span>
+                        <button class="btn-link" onclick="event.stopPropagation(); clearFilters()">Clear All</button>
+                    </div>
                 </div>
+                
+                <div id="filtersPanel" class="filters-panel">
+                    <div class="search-section">
+                        <input type="text" id="searchInput" placeholder="🔍 Search flags by name, description, or targeting context..." class="search-input" oninput="applyFilters()">
+                        <button class="btn-toggle-filters" onclick="toggleAdvancedFilters()">
+                            <span id="filterToggleIcon">⚙️</span> Advanced Filters
+                        </button>
+                    </div>
 
                 <div class="advanced-filters" id="advancedFilters" style="display: none;">
                     <div class="filters-row">
@@ -157,10 +202,11 @@
                     </select>
                 </div>
 
-                <div class="filter-results" id="filterResults"></div>
+                    <div class="filter-results" id="filterResults"></div>
+                </div>
             </div>
 
-            <div class="flags-table">
+            <div class="flags-table-container">
                 <table>
                     <thead>
                         <tr>
@@ -296,6 +342,7 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
             </div>
         </main>
 
