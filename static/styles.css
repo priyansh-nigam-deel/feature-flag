@@ -2467,8 +2467,8 @@ footer {
 }
 
 .environment-tiles-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 16px;
     margin: 24px 0;
 }
@@ -2481,6 +2481,8 @@ footer {
     cursor: pointer;
     transition: all 0.2s;
     position: relative;
+    flex: 0 1 calc(25% - 12px);
+    min-width: 220px;
 }
 
 .env-tile:hover {
