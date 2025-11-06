@@ -2178,20 +2178,181 @@ footer {
     gap: 20px;
 }
 
+/* Environment Metrics Grid */
+.env-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.metric-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.metric-card:hover::before {
+    width: 8px;
+}
+
+.metric-icon {
+    font-size: 36px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f7fafc;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #2d3748;
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: 13px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.metric-subtext {
+    font-size: 12px;
+    color: #a0aec0;
+}
+
+.page-subtitle {
+    color: #718096;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
 .env-card {
     background: white;
-    border: 2px solid #e9ecef;
-    border-radius: 10px;
-    padding: 25px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 15px;
     transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .env-card:hover {
     border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-5px);
+}
+
+.env-card-header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f8f9fa;
+}
+
+.env-header-info {
+    flex: 1;
+}
+
+.env-header-info h4 {
+    margin: 0 0 6px 0;
+    color: #2d3748;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.env-name-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: #667eea;
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.env-metrics {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.env-metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.env-metric-row:last-child {
+    border-bottom: none;
+}
+
+.env-metric-row .metric-label {
+    font-size: 13px;
+    color: #718096;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.env-metric-row .metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.env-metric-row .metric-value.success {
+    color: #48bb78;
+}
+
+.env-metric-row .metric-value.warning {
+    color: #f6ad55;
+}
+
+.env-metric-row .metric-value.danger {
+    color: #f56565;
 }
 
 .env-icon {
