@@ -640,8 +640,14 @@ function showAddEnvironmentDialog() {
     }
     
     const addTile = document.querySelector('.env-tile-add');
+    const tilesContainer = document.getElementById('envTilesContainer');
+    
+    // Get position of the add tile
+    const rect = addTile.getBoundingClientRect();
+    const containerRect = tilesContainer.getBoundingClientRect();
+    
     const dropdownHtml = `
-        <div id="env-dropdown" class="env-add-dropdown">
+        <div id="env-dropdown" class="env-add-dropdown" style="position: absolute; top: ${rect.bottom - containerRect.top + 8}px; left: ${rect.left - containerRect.left}px; width: ${rect.width}px;">
             <div class="env-dropdown-item" onclick="addNewEnvironmentTile('specific')">
                 <span class="env-tile-dot gray"></span> Specific Environment
             </div>
@@ -651,8 +657,8 @@ function showAddEnvironmentDialog() {
         </div>
     `;
     
-    addTile.style.position = 'relative';
-    addTile.insertAdjacentHTML('beforeend', dropdownHtml);
+    tilesContainer.style.position = 'relative';
+    tilesContainer.insertAdjacentHTML('beforeend', dropdownHtml);
     
     // Close dropdown when clicking outside
     setTimeout(() => {

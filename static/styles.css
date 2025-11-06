@@ -2471,6 +2471,8 @@ footer {
     flex-wrap: wrap;
     gap: 16px;
     margin: 24px 0;
+    position: relative;
+    min-height: 120px;
 }
 
 .env-tile {
@@ -2554,6 +2556,8 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: visible;
 }
 
 .env-tile-add:hover {
@@ -2835,6 +2839,7 @@ footer {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
+    min-width: 250px;
 }
 
 /* Environment Dropdown */
